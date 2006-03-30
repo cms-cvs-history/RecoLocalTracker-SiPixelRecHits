@@ -1,6 +1,6 @@
 module pixRecHitConverter = SiPixelRecHitConverter {
            untracked string ClusterCollLabel   = "pixClust"
            string CPE                = "FromDetPosition"
-           double TanLorentzAnglePerTesla = 0.3
+           double TanLorentzAnglePerTesla = 0.106
            untracked int32  VerboseLevel       = 21
 }
