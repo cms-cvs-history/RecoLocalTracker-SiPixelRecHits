@@ -1,14 +1,20 @@
 // File: PixelNtuplizer.cc
 // Description:  see PixelNtuplizer.h
-// Authors:  Petar Maksimovic, Jason Shaev, JHU
+// Authors:  Petar Maksimovic, Jason Shaev, JHU...Vincenzo Chiochia
 // History: 4/4/06   creation
 //--------------------------------------------
 
 #include "RecoLocalTracker/SiPixelRecHits/test/PixelNtuplizer.h"
 
+
+// DataFormats
+#include "DataFormats/TrackerRecHit2D/interface/SiPixelRecHitCollection.h"
+#include "DataFormats/SiPixelCluster/interface/SiPixelClusterCollection.h"
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/SiPixelDetId/interface/PXBDetId.h" 
+#include "DataFormats/SiPixelDetId/interface/PXFDetId.h" 
 #include "DataFormats/SiPixelDetId/interface/PixelSubdetector.h"
+
 
 // Old
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
@@ -22,10 +28,12 @@
 #include "Geometry/CommonDetUnit/interface/GeomDetUnit.h"
 
 
-
-#include "SimDataFormats/TrackingHit/interface/PSimHit.h"
+// SimDataFormats
+//#include "SimDataFormats/TrackingHit/interface/PSimHit.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
-
+#include "SimDataFormats/Track/interface/EmbdSimTrack.h"
+#include "SimDataFormats/Vertex/interface/EmbdSimVertex.h"
+//
 #include "FWCore/Framework/interface/Handle.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
@@ -83,22 +91,25 @@ void PixelNtuplizer::beginJob(const edm::EventSetup& es)
   
   //tree->Branch("event", "Event", &event, bsize,split);
   
-  std::cout << "Making det branch:" << std::endl;
-  t_->Branch("det",   &det_,   "subdet/I:layer/I:ladder/I:z/F:r/F:thickness/F:cols/I:rows:I", bufsize);
+   t_->Branch("det", &det_, "thickness/F:cols/I:rows/I:layer/I:ladder/I:module/I:disk/I:blade/I:panel/I:plaquette/I", bufsize);
+
+    std::cout << "Making vertex branch:" << std::endl;
+  t_->Branch("vertex",   &vertex_,   "num/I:r/F:z/F", bufsize);
+
+  std::cout << "Making track branch:" << std::endl;
+   t_->Branch("track", &track_, "eta/F:phi/F", bufsize);
 
   std::cout << "Making sim hit branch:" << std::endl;
-  t_->Branch("sim",   &sim_,   "x/F:y/F:xIn/F:xOut/F:yIn/F:yOut/F", bufsize);
+  t_->Branch("sim",   &sim_,   "x/F:y/F:px/F:py/F:pz/F:eloss/F:phi/F:theta/F:subdetid/I:isflipped/I", bufsize);
 
   std::cout << "Making cluster branch:" << std::endl;
-  t_->Branch("clust", &clust_, "x/F:y/F:ch/F:size/I:sizeX/I:sizeY/I:maxPixelCol/I:maxPixelRow/I:minPixelCol/I:minPixelRow/I:geoId/I", bufsize);
+  t_->Branch("clust", &clust_, "x/F:y/F:charge/F:size/I:size_x/I:size_y/I:maxPixelCol/I:maxPixelRow/I:minPixelCol/I:minPixelRow/I:geoId/i:edgeHitX/O:edgeHitY/O", bufsize);
 
   std::cout << "Making recHit branch:" << std::endl;
-  t_->Branch("recHit", &recHit_, "x/F:y/F:xErr/F:yErr/F", bufsize);
+  t_->Branch("recHit", &recHit_, "x/F:y/F:xx/F:xy/F:yy/F", bufsize);
 
   std::cout << "Made all branches." << std::endl;
 }
-
-
 
 // Functions that gets called by framework every event
 void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
@@ -161,8 +172,11 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
   //--- Iterate over PSim hit
   bool PRINT = true;
 
-  for (std::vector<PSimHit>::iterator isim = pixelPSimHits_.begin(),
-	 isimEnd = pixelPSimHits_.end(); 
+  std::vector<PSimHit>::iterator isim;
+  std::vector<PSimHit>::iterator isimEnd;
+
+  for (isim = pixelPSimHits_.begin(),
+       isimEnd = pixelPSimHits_.end(); 
        isim != isimEnd; ++isim){
     //DetId detid((*isim).detUnitId());
     DetId detIdObj((*isim).detUnitId());
@@ -178,29 +192,23 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
     //--- in the memory, we need to re-initialize the cache used for 
     //--- each of the branches.
     det_.init();
+    vertex_.init();
+    track_.init();
     sim_.init();
     clust_.init();
     recHit_.init();
 
+    fillDet(detIdObj, subid);
 
-    //--- Get the information for this PSimHit.
-    sim_.xIn  = (*isim).entryPoint().x(); // width (row index, in col direction)
-    sim_.yIn  = (*isim).entryPoint().y(); // length (col index, in row direction) 
-    sim_.xOut = (*isim).exitPoint().x();
-    sim_.yOut = (*isim).exitPoint().y();
-    sim_.x    = 0.5*(sim_.xIn + sim_.xOut);
-    sim_.y    = 0.5*(sim_.yIn + sim_.yOut);
-
-    det_.subdet = detIdObj.subdetId();
-    det_.layer = 9999;
-    det_.ladder = 9999;
+    fillSim(isim);
+    sim_.subdetid = subid;
 
 
     // Get the geom-detector
     const PixelGeomDetUnit * theGeomDet =
       dynamic_cast<const PixelGeomDetUnit*> (theTracker.idToDet(detIdObj) );
-    det_.z = theGeomDet->surface().position().z();
-    det_.r = theGeomDet->surface().position().perp();
+    vertex_.z = theGeomDet->surface().position().z();
+    vertex_.r = theGeomDet->surface().position().perp();
 
     const BoundPlane& plane = theGeomDet->surface(); //for transf.
     
@@ -208,7 +216,13 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
     det_.cols = theGeomDet->specificTopology().ncolumns();
     det_.rows = theGeomDet->specificTopology().nrows();
 
-
+ // Is flipped ?
+    float tmp1 = theGeomDet->surface().toGlobal(Local3DPoint(0.,0.,0.)).perp();
+    float tmp2 = theGeomDet->surface().toGlobal(Local3DPoint(0.,0.,1.)).perp();
+    //cout << " 1: " << tmp1 << " 2: " << tmp2 << endl;
+    if ( tmp2<tmp1 ) sim_.isflipped = 1;
+    else sim_.isflipped = 0;
+ 
     // Get topology
     const RectangularPixelTopology * topol = 
       dynamic_cast<const RectangularPixelTopology*>(&(theGeomDet->specificTopology()));
@@ -264,48 +278,71 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
     //--- this DetUnit and finding the closest one.
     //------------------------------------------------------------------------
 
-#if 0
-    const SiPixelRecHitCollection::Range recHitRange = 
-      recHitColl->get(detIdObj());
-    
 
-    SiPixelRecHitCollection::ContainerIterator recHitIt;
-    SiPixelRecHitCollection::ContainerIterator rmatchIt = recHitRange.second; //end 
+    float dr_rh0=99999., dx_rh=99999., dy_rh=99999.;
 
-    float dr0=99999., dx=99999., dy=99999.;
-    for (recHitIt = recHitRange.first; recHitIt != recHitRange.second; 
-	 ++recHitIt ) {
-      //
-      float x = recHitIt->x();
-      float y = recHitIt->y();
-      //
-      LocalPoint lp = topol->localPosition(MeasurementPoint(x,y));
-      if(PRINT)cout<<lp.x()<<" "<<lp.y()<<endl;
-      //
-      float dr = 
-	(sim_.x-lp.x())*(sim_.x-lp.x()) + (sim_.y-lp.y())*(sim_.y-lp.y());
-      if (dr < dr_min){
-	// &&& Instead, let's store the iterator and then fill in all the
-	// &&& vars for that hit
-        rmatchIt = recHitIt;
-	dr_min=dr;
-	recHit_.x = lp.x();
-	recHit_.y = lp.y();
-      }  
-      if (PRINT) cout<<"simhit "<<sim_.x<<" "<<sim_.y<<" "<<dr<<endl;
+    SiPixelRecHitCollection::range rechitRange = recHitColl->get(detIdObj);
+    SiPixelRecHitCollection::const_iterator rechitIt; 
+    for (rechitIt = rechitRange.first; rechitIt != rechitRange.second; 
+         ++rechitIt ) {
+      LocalPoint lp = rechitIt->localPosition();
+      LocalError le = rechitIt->localPositionError();
+      float dr_rh = 
+        (sim_.x-lp.x())*(sim_.x-lp.x()) + (sim_.y-lp.y())*(sim_.y-lp.y());
+
+      if(dr_rh<dr_rh0){
+        dr_rh0=dr_rh;
+	fillRecHit(lp,le);
+      }
+      if(PRINT)cout<<"---> rechit found: x " << lp.x() <<"  y "<<lp.y() << " distance " << dr_rh0 << endl;
+    }
+
+    if(dr_rh0==99999.) {
+      recHit_.x = 9999.;
+      recHit_.y = 9999.;
     }
     
 
-    //--- If there was a match, capture the recHiter quantities
-    if (dr_min < 99999.) { 
-      fillRecHit(rmatchIt);           // copy relevant stuff from rmatchIt into recHit_
-    }
-    else {
-      recHit_.init();            // wipe it all out
-      //if(PRINT) cout<<" no match for this hit "<<endl;
-    }
 
-#endif
+
+//     const SiPixelRecHitCollection::Range recHitRange = 
+//       recHitColl->get(detIdObj());
+    
+//     SiPixelRecHitCollection::ContainerIterator recHitIt;
+//     SiPixelRecHitCollection::ContainerIterator rmatchIt = recHitRange.second; //end 
+
+//     float dr0=99999., dx=99999., dy=99999.;
+//     for (recHitIt = recHitRange.first; recHitIt != recHitRange.second; 
+// 	 ++recHitIt ) {
+//       //
+//       float x = recHitIt->x();
+//       float y = recHitIt->y();
+//       //
+//       LocalPoint lp = topol->localPosition(MeasurementPoint(x,y));
+//       if(PRINT)cout<<lp.x()<<" "<<lp.y()<<endl;
+//       //
+//       float dr = 
+// 	(sim_.x-lp.x())*(sim_.x-lp.x()) + (sim_.y-lp.y())*(sim_.y-lp.y());
+//       if (dr < dr_min){
+// 	// &&& Instead, let's store the iterator and then fill in all the
+// 	// &&& vars for that hit
+//         rmatchIt = recHitIt;
+// 	dr_min=dr;
+// 	recHit_.x = lp.x();
+// 	recHit_.y = lp.y();
+//       }  
+//       if (PRINT) cout<<"simhit "<<sim_.x<<" "<<sim_.y<<" "<<dr<<endl;
+//     }
+    
+
+//     //--- If there was a match, capture the recHiter quantities
+//     if (dr_min < 99999.) { 
+//       fillRecHit(rmatchIt);           // copy relevant stuff from rmatchIt into recHit_
+//     }
+//     else {
+//       recHit_.init();            // wipe it all out
+//       //if(PRINT) cout<<" no match for this hit "<<endl;
+//     }
 
 
 
@@ -316,8 +353,85 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
   }
 }
 
+#if 0
+void PixelNtuplizer::fillRecHit( SiPixelRecHitCollection::ContainerIterator recHitIt)
+{
+      LocalPoint lp = rechitIt->localPosition();
+      LocalError le = rechitIt->localPositionError();
+      float dr_rh = 
+	(sim_xpos-lp.x())*(sim_xpos-lp.x()) + (sim_ypos-lp.y())*(sim_ypos-lp.y());
 
+      if(dr_rh<dr_rh0){
+	dr_rh0=dr_rh;
+	recHit_.x = lp.x();
+	recHit_.y = lp.y();
+	recHit_.xx = le.xx();
+	recHit_.xy = le.xy();
+	recHit_.yy = le.yy();
+      }
+      if(PRINT)cout<<"---> rechit found: x " << lp.x() <<"  y "<<lp.y() << " distance " << dr_rh0 << endl;
+    }
 
+    if(dr_rh0==99999.) {
+      recHit_.x = 9999.;
+      recHit_.y = 9999.;
+    }
+    
+    if(dr0<99999.) { // some match was found
+      if(PRINT) cout<<"match "<<dr0<<" "<<dx<<" "<<dy<<endl;
+      //hdr->Fill(sqrt(dr0)*10000.);
+      //hresX1->Fill(dx);
+      //hresY1->Fill(dy);
+    } else {
+      //hdr->Fill(999.);
+      if(PRINT) cout<<" no match for this hit "<<endl;
+      clust_.x = 9999.;
+      clust_.y = 9999.;
+    }
+
+}
+#endif
+
+void PixelNtuplizer::fillRecHit(LocalPoint lp, LocalError le) {
+        recHit_.x = lp.x();
+        recHit_.y = lp.y();
+        recHit_.xx = le.xx();
+        recHit_.xy = le.xy();
+        recHit_.yy = le.yy();
+}
+
+void PixelNtuplizer::fillSim(std::vector<PSimHit>::iterator isim) {
+    float sim_x1 = (*isim).entryPoint().x(); // width (row index, in col direction)
+    float sim_y1 = (*isim).entryPoint().y(); // length (col index, in row direction) 
+    float sim_x2 = (*isim).exitPoint().x();
+    float sim_y2 = (*isim).exitPoint().y();
+    float sim_xpos = 0.5*(sim_x1+sim_x2);
+    float sim_ypos = 0.5*(sim_y1+sim_y2);         
+    sim_.x     = sim_xpos;
+    sim_.y     = sim_ypos;
+   
+    sim_.px  = (*isim).momentumAtEntry().x();
+    sim_.py  = (*isim).momentumAtEntry().y();
+    sim_.pz  = (*isim).momentumAtEntry().z();
+    sim_.eloss = (*isim).energyLoss();
+    sim_.phi   = (*isim).phiAtEntry();
+    sim_.theta = (*isim).thetaAtEntry();
+ }
+
+void PixelNtuplizer::fillDet(DetId &tofill, int subdetid)
+{
+  if(subdetid==1) {
+      det_.layer  = PXBDetId::PXBDetId(tofill).layer();
+      det_.ladder = PXBDetId::PXBDetId(tofill).ladder();
+      det_.module = PXBDetId::PXBDetId(tofill).module();
+    } else {
+      det_.disk      =  PXFDetId::PXFDetId(tofill).disk();
+      det_.blade     =  PXFDetId::PXFDetId(tofill).blade();
+      det_.panel     =  PXFDetId::PXFDetId(tofill).panel();
+      det_.plaquette =  PXFDetId::PXFDetId(tofill).module();
+    }
+
+}
 
 void 
 PixelNtuplizer::fillClust(SiPixelClusterCollection::ContainerIterator & matchIt)
@@ -329,10 +443,10 @@ PixelNtuplizer::fillClust(SiPixelClusterCollection::ContainerIterator & matchIt)
   //       if(PRINT) cout<<"match "<<dr0<<" "<<dx<<" "<<dy<<endl;
   
   //const vector<Pixel>  = clustIt->pixels();
-  clust_.ch = (matchIt->charge())/1000.; // convert ke to electrons
+  clust_.charge = (matchIt->charge())/1000.; // convert ke to electrons
   clust_.size = matchIt->size();
-  clust_.sizeX = matchIt->sizeX();
-  clust_.sizeY = matchIt->sizeY();
+  clust_.size_x = matchIt->sizeX();
+  clust_.size_y = matchIt->sizeY();
   clust_.x = matchIt->x();
   clust_.y = matchIt->y();
   clust_.maxPixelCol = matchIt->maxPixelCol();
@@ -349,50 +463,77 @@ PixelNtuplizer::fillClust(SiPixelClusterCollection::ContainerIterator & matchIt)
 
 void PixelNtuplizer::Det::init()
 {
-  static float dummy_float = 9999.0;
-  static int dummy_int = 9999;
-  static unsigned int dummy_uint = 9999;
-  static  bool dummy_bool = false;
+  float dummy_float = 9999.0;
+  int dummy_int = 9999;
+  //unsigned int dummy_uint = 9999;
+  //bool dummy_bool = false;
   
-  subdet = dummy_int;
-  layer  = dummy_int;
-  ladder  = dummy_int;
-  z = dummy_float;
-  r = dummy_float;
   thickness = dummy_float;
   cols  = dummy_int;
   rows  = dummy_int;
+  layer = dummy_int;
+  ladder = dummy_int;
+  module = dummy_int;
+  disk = dummy_int;
+  blade = dummy_int;
+  panel = dummy_int;
+  plaquette = dummy_int;
 }
 
-
-void PixelNtuplizer::Sim::init()
+void PixelNtuplizer::vertex::init()
 {
-  static float dummy_float = 9999.0;
-  static int dummy_int = 9999;
-  static unsigned int dummy_uint = 9999;
-  static  bool dummy_bool = false;
+  float dummy_float = 9999.0;
+  int dummy_int = 9999;
+  //unsigned int dummy_uint = 9999;
+  //bool dummy_bool = false;
+
+  num = dummy_int;
+  r = dummy_float;
+  z = dummy_float;
+ }
+
+void PixelNtuplizer::track::init()
+{
+  float dummy_float = 9999.0;
+  //int dummy_int = 9999;
+  //unsigned int dummy_uint = 9999;
+  //bool dummy_bool = false;
+
+  eta = dummy_float;
+  phi = dummy_float;
+}
+
+void PixelNtuplizer::sim::init()
+{
+  float dummy_float = 9999.0;
+  int dummy_int = 9999;
+  //unsigned int dummy_uint = 9999;
+  //bool dummy_bool = false;
   
   x = dummy_float;
   y = dummy_float;
-  xIn = dummy_float;
-  xOut = dummy_float;
-  yIn = dummy_float;
-  yOut = dummy_float;
+  px = dummy_float;
+  py = dummy_float;
+  pz = dummy_float;
+  eloss = dummy_float;
+  phi = dummy_float;
+  theta = dummy_float;
+  isflipped = dummy_int;
 }
 
 
 
-void PixelNtuplizer::Clust::init()
+void PixelNtuplizer::clust::init()
 {
-  static float dummy_float = 9999.0;
-  static int dummy_int = 9999;
-  static unsigned int dummy_uint = 9999;
-  static  bool dummy_bool = false;
+  float dummy_float = 9999.0;
+  int dummy_int = 9999;
+  unsigned int dummy_uint = 9999;
+  bool dummy_bool = false;
   
-  ch = dummy_float; // convert ke to electrons
+  charge = dummy_float; // convert ke to electrons
   size = dummy_int;
-  sizeX = dummy_int;
-  sizeY = dummy_int;
+  size_x = dummy_int;
+  size_y = dummy_int;
   x = dummy_float;
   y = dummy_float;
   maxPixelCol = dummy_int;
@@ -405,20 +546,18 @@ void PixelNtuplizer::Clust::init()
   edgeHitY = dummy_bool;
 }
 
-
-
-
 void PixelNtuplizer::RecHit::init()
 {
-  static float dummy_float = 9999.0;
-  static int dummy_int = 9999;
-  static unsigned int dummy_uint = 9999;
-  static  bool dummy_bool = false;
+  float dummy_float = 9999.0;
+  //int dummy_int = 9999;
+  //unsigned int dummy_uint = 9999;
+  //bool dummy_bool = false;
 
   x = dummy_float;
   y = dummy_float;
-  xErr = dummy_float;
-  yErr = dummy_float; 
+  xx = dummy_float;
+  xy = dummy_float; 
+  yy = dummy_float;
 }
 
 
