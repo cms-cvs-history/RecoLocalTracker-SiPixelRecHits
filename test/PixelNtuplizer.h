@@ -94,6 +94,10 @@ class PixelNtuplizer : public edm::EDAnalyzer
     float theta;
     int subdetid;
     int isflipped;
+    // alpha and beta are related to phi and theta, but
+    // more standard:
+    float alpha;   
+    float beta;
 
     void init();
   } sim_;

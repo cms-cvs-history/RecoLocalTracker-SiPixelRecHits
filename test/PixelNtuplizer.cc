@@ -100,7 +100,7 @@ void PixelNtuplizer::beginJob(const edm::EventSetup& es)
    t_->Branch("track", &track_, "eta/F:phi/F", bufsize);
 
   std::cout << "Making sim hit branch:" << std::endl;
-  t_->Branch("sim",   &sim_,   "x/F:y/F:px/F:py/F:pz/F:eloss/F:phi/F:theta/F:subdetid/I:isflipped/I", bufsize);
+  t_->Branch("sim",   &sim_,   "x/F:y/F:px/F:py/F:pz/F:eloss/F:phi/F:theta/F:subdetid/I:isflipped/I:alpha/F:beta/F", bufsize);
 
   std::cout << "Making cluster branch:" << std::endl;
   t_->Branch("clust", &clust_, "x/F:y/F:charge/F:size/I:size_x/I:size_y/I:maxPixelCol/I:maxPixelRow/I:minPixelCol/I:minPixelRow/I:geoId/i:edgeHitX/O:edgeHitY/O", bufsize);
@@ -353,44 +353,42 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
   }
 }
 
-#if 0
-void PixelNtuplizer::fillRecHit( SiPixelRecHitCollection::ContainerIterator recHitIt)
-{
-      LocalPoint lp = rechitIt->localPosition();
-      LocalError le = rechitIt->localPositionError();
-      float dr_rh = 
-	(sim_xpos-lp.x())*(sim_xpos-lp.x()) + (sim_ypos-lp.y())*(sim_ypos-lp.y());
-
-      if(dr_rh<dr_rh0){
-	dr_rh0=dr_rh;
-	recHit_.x = lp.x();
-	recHit_.y = lp.y();
-	recHit_.xx = le.xx();
-	recHit_.xy = le.xy();
-	recHit_.yy = le.yy();
-      }
-      if(PRINT)cout<<"---> rechit found: x " << lp.x() <<"  y "<<lp.y() << " distance " << dr_rh0 << endl;
-    }
-
-    if(dr_rh0==99999.) {
-      recHit_.x = 9999.;
-      recHit_.y = 9999.;
-    }
-    
-    if(dr0<99999.) { // some match was found
-      if(PRINT) cout<<"match "<<dr0<<" "<<dx<<" "<<dy<<endl;
-      //hdr->Fill(sqrt(dr0)*10000.);
-      //hresX1->Fill(dx);
-      //hresY1->Fill(dy);
-    } else {
-      //hdr->Fill(999.);
-      if(PRINT) cout<<" no match for this hit "<<endl;
-      clust_.x = 9999.;
-      clust_.y = 9999.;
-    }
-
-}
-#endif
+// void PixelNtuplizer::fillRecHit( SiPixelRecHitCollection::ContainerIterator recHitIt)
+// {
+//       LocalPoint lp = rechitIt->localPosition();
+//       LocalError le = rechitIt->localPositionError();
+//       float dr_rh = 
+// 	(sim_xpos-lp.x())*(sim_xpos-lp.x()) + (sim_ypos-lp.y())*(sim_ypos-lp.y());
+//
+//       if(dr_rh<dr_rh0){
+// 	dr_rh0=dr_rh;
+// 	recHit_.x = lp.x();
+// 	recHit_.y = lp.y();
+// 	recHit_.xx = le.xx();
+// 	recHit_.xy = le.xy();
+// 	recHit_.yy = le.yy();
+//       }
+//       if(PRINT)cout<<"---> rechit found: x " << lp.x() <<"  y "<<lp.y() << " distance " << dr_rh0 << endl;
+//     }
+//
+//     if(dr_rh0==99999.) {
+//       recHit_.x = 9999.;
+//       recHit_.y = 9999.;
+//     }
+//    
+//     if(dr0<99999.) { // some match was found
+//       if(PRINT) cout<<"match "<<dr0<<" "<<dx<<" "<<dy<<endl;
+//       //hdr->Fill(sqrt(dr0)*10000.);
+//       //hresX1->Fill(dx);
+//       //hresY1->Fill(dy);
+//     } else {
+//       //hdr->Fill(999.);
+//       if(PRINT) cout<<" no match for this hit "<<endl;
+//       clust_.x = 9999.;
+//       clust_.y = 9999.;
+//     }
+//
+// }
 
 void PixelNtuplizer::fillRecHit(LocalPoint lp, LocalError le) {
         recHit_.x = lp.x();
@@ -399,6 +397,7 @@ void PixelNtuplizer::fillRecHit(LocalPoint lp, LocalError le) {
         recHit_.xy = le.xy();
         recHit_.yy = le.yy();
 }
+
 
 void PixelNtuplizer::fillSim(std::vector<PSimHit>::iterator isim) {
     float sim_x1 = (*isim).entryPoint().x(); // width (row index, in col direction)
@@ -416,7 +415,12 @@ void PixelNtuplizer::fillSim(std::vector<PSimHit>::iterator isim) {
     sim_.eloss = (*isim).energyLoss();
     sim_.phi   = (*isim).phiAtEntry();
     sim_.theta = (*isim).thetaAtEntry();
+
+    //--- Fill alpha and beta -- more useful for exploring the residuals...
+    sim_.beta  = atan2(sim_.pz, sim_.py);
+    sim_.alpha = atan2(sim_.pz, sim_.px);
  }
+
 
 void PixelNtuplizer::fillDet(DetId &tofill, int subdetid)
 {
