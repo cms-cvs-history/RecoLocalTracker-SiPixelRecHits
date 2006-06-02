@@ -1,5 +1,0 @@
-es_module = PixelCPEParmErrorESProducer {
-       string ComponentName = "PixelCPEfromTrackAngle"
-       double TanLorentzAnglePerTesla = 0.106
-       string  PixelErrorParametrization.type = "NOTcmsim"  
-}
