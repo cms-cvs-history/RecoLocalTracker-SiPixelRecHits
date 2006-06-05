@@ -1,6 +1,6 @@
 // File: PixelNtuplizer.cc
 // Description:  see PixelNtuplizer.h
-// Authors:  Petar Maksimovic, Jason Shaev, JHU...Vincenzo Chiochia
+// Authors:  Petar Maksimovic, Jason Shaev, JHU...Vincenzo Chiochia, CERN
 // History: 4/4/06   creation
 //--------------------------------------------
 
@@ -14,7 +14,8 @@
 #include "DataFormats/SiPixelDetId/interface/PXBDetId.h" 
 #include "DataFormats/SiPixelDetId/interface/PXFDetId.h" 
 #include "DataFormats/SiPixelDetId/interface/PixelSubdetector.h"
-
+#include "DataFormats/Common/interface/DetSetVector.h"
+#include "DataFormats/SiPixelCluster/interface/SiPixelCluster.h"
 
 // Old
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
@@ -100,7 +101,7 @@ void PixelNtuplizer::beginJob(const edm::EventSetup& es)
    t_->Branch("track", &track_, "eta/F:phi/F", bufsize);
 
   std::cout << "Making sim hit branch:" << std::endl;
-  t_->Branch("sim",   &sim_,   "x/F:y/F:px/F:py/F:pz/F:eloss/F:phi/F:theta/F:subdetid/I:isflipped/I:alpha/F:beta/F", bufsize);
+  t_->Branch("sim",   &sim_,   "x/F:y/F:px/F:py/F:pz/F:eloss/F:phi/F:theta/F:subdetid/I:isflipped/I:alpha/F:beta/F:PID/I:TID/i", bufsize);
 
   std::cout << "Making cluster branch:" << std::endl;
   t_->Branch("clust", &clust_, "x/F:y/F:charge/F:size/I:size_x/I:size_y/I:maxPixelCol/I:maxPixelRow/I:minPixelCol/I:minPixelRow/I:geoId/i:edgeHitX/O:edgeHitY/O", bufsize);
@@ -149,18 +150,22 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
 
 
   //--- Fetch Pixel Clusters
-  edm::Handle<SiPixelClusterCollection> clustColl;
-  e.getByType(clustColl);
+  std::string clusterCollLabel = conf_.getUntrackedParameter<std::string>("ClusterCollLabel","pixClust"); 
+  edm::Handle< edm::DetSetVector<SiPixelCluster> > clustColl;
+  e.getByLabel(clusterCollLabel, clustColl);
+  edm::DetSetVector<SiPixelCluster>::const_iterator DSViter = clustColl->begin();
 
+/*
   std::cout 
     <<" FOUND " 
     << const_cast<SiPixelClusterCollection*>(clustColl.product())->size()
     << " Pixel Clusters" << std::endl;
-
+*/
 
   //--- Fetch Pixel RecHits
+  std::string recHitCollLabel = conf_.getUntrackedParameter<std::string>("RecHitCollLabel","pixRecHitConverter");
   edm::Handle<SiPixelRecHitCollection> recHitColl;
-  e.getByType(recHitColl);
+  e.getByLabel(recHitCollLabel, recHitColl);
   
   std::cout 
     <<" FOUND " 
@@ -234,13 +239,13 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
     //------------------------------------------------------------------------
 
     float dr_min=99999., dx=99999., dy=99999.;
-    const SiPixelClusterCollection::Range clustRange = 
-      clustColl->get(detIdObj());
+    //const SiPixelClusterCollection::Range clustRange = 
+     // clustColl->get(detIdObj());
 
-    SiPixelClusterCollection::ContainerIterator clustIt;
-    SiPixelClusterCollection::ContainerIterator matchIt = clustRange.second; //end 
+    edm::DetSet<SiPixelCluster>::const_iterator clustIt;
+    edm::DetSet<SiPixelCluster>::const_iterator matchIt = DSViter->data.end(); //end 
 
-    for (clustIt = clustRange.first; clustIt != clustRange.second; 
+    for (clustIt = DSViter->data.begin(); clustIt != DSViter->data.end(); 
 	 ++clustIt ) {
       //
       float x = clustIt->x();
@@ -252,8 +257,6 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
       float dr = 
 	(sim_.x-lp.x())*(sim_.x-lp.x()) + (sim_.y-lp.y())*(sim_.y-lp.y());
       if (dr < dr_min){
-	// &&& Instead, let's store the iterator and then fill in all the
-	// &&& vars for that hit
         matchIt = clustIt;
 	dr_min=dr;
 	clust_.x = lp.x();
@@ -415,6 +418,8 @@ void PixelNtuplizer::fillSim(std::vector<PSimHit>::iterator isim) {
     sim_.eloss = (*isim).energyLoss();
     sim_.phi   = (*isim).phiAtEntry();
     sim_.theta = (*isim).thetaAtEntry();
+    sim_.PID = (*isim).particleType();
+    sim_.TID = (*isim).trackId();
 
     //--- Fill alpha and beta -- more useful for exploring the residuals...
     sim_.beta  = atan2(sim_.pz, sim_.py);
@@ -433,6 +438,10 @@ void PixelNtuplizer::fillDet(DetId &tofill, int subdetid)
       det_.blade     =  PXFDetId::PXFDetId(tofill).blade();
       det_.panel     =  PXFDetId::PXFDetId(tofill).panel();
       det_.plaquette =  PXFDetId::PXFDetId(tofill).module();
+      
+      //Following Danek's advice...
+      unsigned int side = PXFDetId::PXFDetId(tofill).side();
+      if (side==1) det_.disk = - det_.disk; 
     }
 
 }

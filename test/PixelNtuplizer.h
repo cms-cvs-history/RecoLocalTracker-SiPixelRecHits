@@ -98,6 +98,10 @@ class PixelNtuplizer : public edm::EDAnalyzer
     // more standard:
     float alpha;   
     float beta;
+    int PID;
+    unsigned int TID;
+
+
 
     void init();
   } sim_;
