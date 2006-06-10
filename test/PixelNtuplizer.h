@@ -21,6 +21,10 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 
 #include "DataFormats/Common/interface/EDProduct.h"
+#include "DataFormats/Common/interface/Ref.h"
+
+#include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetUnit.h"
+#include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetType.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
@@ -40,13 +44,14 @@ class PixelNtuplizer : public edm::EDAnalyzer
   virtual void analyze(const edm::Event& e, const edm::EventSetup& es);
 
  protected:
-  void fillClust (SiPixelClusterCollection::ContainerIterator & );
-  void fillRecHit( LocalPoint, LocalError );
+  void fillClust (const SiPixelCluster &);
+  void fillRecHit(SiPixelRecHitCollection::const_iterator);
   void fillDet(DetId &, int );
-  void fillSim(std::vector<PSimHit>::iterator); 
+  void fillSim(std::vector<PSimHit>::const_iterator, unsigned int, const PixelGeomDetUnit * ); 
  
  private:
   edm::ParameterSet conf_;
+  void init();
   
   //--- Structures for ntupling:
   struct Det 

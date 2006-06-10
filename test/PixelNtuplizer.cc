@@ -1,9 +1,12 @@
 // File: PixelNtuplizer.cc
 // Description:  see PixelNtuplizer.h
 // Authors:  Petar Maksimovic, Jason Shaev, JHU...Vincenzo Chiochia, CERN
-// History: 4/4/06   creation
+// History: 4/4/06   creation, new version: 6/6/06
 //--------------------------------------------
-
+/*
+   The new version works by iterating over all detids. It then grabs rechits from the collection based upon this detid. This rechit can then be associated to a sim hit using the TrackerAssociator tool. It grabs the cluster using the cluster function of the rec hit.
+*/
+	
 #include "RecoLocalTracker/SiPixelRecHits/test/PixelNtuplizer.h"
 
 
@@ -16,14 +19,13 @@
 #include "DataFormats/SiPixelDetId/interface/PixelSubdetector.h"
 #include "DataFormats/Common/interface/DetSetVector.h"
 #include "DataFormats/SiPixelCluster/interface/SiPixelCluster.h"
+#include "DataFormats/Common/interface/Ref.h"
 
 // Old
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
 
 #include "Geometry/TrackerTopology/interface/RectangularPixelTopology.h"
 #include "Geometry/TrackerGeometryBuilder/interface/PixelTopologyBuilder.h"
-#include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetUnit.h"
-#include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetType.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 #include "Geometry/CommonDetUnit/interface/GeomDetType.h"
 #include "Geometry/CommonDetUnit/interface/GeomDetUnit.h"
@@ -34,7 +36,8 @@
 #include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
 #include "SimDataFormats/Track/interface/EmbdSimTrack.h"
 #include "SimDataFormats/Vertex/interface/EmbdSimVertex.h"
-//
+#include "SimTracker/TrackerHitAssociation/interface/TrackerHitAssociator.h"
+
 #include "FWCore/Framework/interface/Handle.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
@@ -55,7 +58,7 @@
 #include <iostream>
 
 using namespace std;
-
+using namespace edm;
 
 PixelNtuplizer::PixelNtuplizer(edm::ParameterSet const& conf) : 
   conf_(conf), tfile_(0), t_(0)
@@ -118,49 +121,10 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
   using namespace edm;
   std::string rechitProducer = conf_.getParameter<std::string>("RecHitProducer");
 
-  
   // Get event setup (to get global transformation)
   edm::ESHandle<TrackerGeometry> geom;
   es.get<TrackerDigiGeometryRecord>().get( geom );
   const TrackerGeometry& theTracker(*geom);
-
-  
-  // PSim hits
-  std::vector<PSimHit> pixelPSimHits_;
-  pixelPSimHits_.clear();      // once pixelPSimHits_ gets moved into a class variable
-
-  edm::Handle<edm::PSimHitContainer> PixelBarrelHitsLowTof;
-  edm::Handle<edm::PSimHitContainer> PixelBarrelHitsHighTof;
-  edm::Handle<edm::PSimHitContainer> PixelEndcapHitsLowTof;
-  edm::Handle<edm::PSimHitContainer> PixelEndcapHitsHighTof;
-
-  e.getByLabel("SimG4Object","TrackerHitsPixelBarrelLowTof", PixelBarrelHitsLowTof);
-  e.getByLabel("SimG4Object","TrackerHitsPixelBarrelHighTof", PixelBarrelHitsHighTof);
-  e.getByLabel("SimG4Object","TrackerHitsPixelEndcapLowTof", PixelEndcapHitsLowTof);
-  e.getByLabel("SimG4Object","TrackerHitsPixelEndcapHighTof", PixelEndcapHitsHighTof);
-
-  pixelPSimHits_.insert(pixelPSimHits_.end(), PixelBarrelHitsLowTof->begin(), PixelBarrelHitsLowTof->end()); 
-  pixelPSimHits_.insert(pixelPSimHits_.end(), PixelBarrelHitsHighTof->begin(), PixelBarrelHitsHighTof->end());
-  pixelPSimHits_.insert(pixelPSimHits_.end(), PixelEndcapHitsLowTof->begin(), PixelEndcapHitsLowTof->end()); 
-  pixelPSimHits_.insert(pixelPSimHits_.end(), PixelEndcapHitsHighTof->begin(), PixelEndcapHitsHighTof->end());
-  
-  std::cout 
-    <<" FOUND " << pixelPSimHits_.size() 
-    <<" Pixel PSim Hits"<<std::endl;
-
-
-  //--- Fetch Pixel Clusters
-  std::string clusterCollLabel = conf_.getUntrackedParameter<std::string>("ClusterCollLabel","pixClust"); 
-  edm::Handle< edm::DetSetVector<SiPixelCluster> > clustColl;
-  e.getByLabel(clusterCollLabel, clustColl);
-  edm::DetSetVector<SiPixelCluster>::const_iterator DSViter = clustColl->begin();
-
-/*
-  std::cout 
-    <<" FOUND " 
-    << const_cast<SiPixelClusterCollection*>(clustColl.product())->size()
-    << " Pixel Clusters" << std::endl;
-*/
 
   //--- Fetch Pixel RecHits
   std::string recHitCollLabel = conf_.getUntrackedParameter<std::string>("RecHitCollLabel","pixRecHitConverter");
@@ -172,46 +136,28 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
     << const_cast<SiPixelRecHitCollection*>(recHitColl.product())->size()
     << " Pixel RecHits" << std::endl;
 
-
-
-  //--- Iterate over PSim hit
   bool PRINT = true;
 
-  std::vector<PSimHit>::iterator isim;
-  std::vector<PSimHit>::iterator isimEnd;
+  TrackerHitAssociator associate(e);
 
-  for (isim = pixelPSimHits_.begin(),
-       isimEnd = pixelPSimHits_.end(); 
-       isim != isimEnd; ++isim){
-    //DetId detid((*isim).detUnitId());
-    DetId detIdObj((*isim).detUnitId());
-    unsigned int subid=detIdObj.subdetId();
-    if (! ((subid==PixelSubdetector::PixelBarrel) || 
-	   (subid== PixelSubdetector::PixelEndcap))) {
-      std::cout << "Huh?  Not a pixel PSimHit.  Weird... Skipped it." 
-		<< std::endl;
-      continue;
-    }
+  //-----Iterate over detunits
+   for (TrackerGeometry::DetContainer::const_iterator it = geom->dets().begin(); it != geom->dets().end(); it++) {
 
     //--- Since TTree::Fill() will simply take a snapshot of what's 
     //--- in the memory, we need to re-initialize the cache used for 
     //--- each of the branches.
-    det_.init();
-    vertex_.init();
-    track_.init();
-    sim_.init();
-    clust_.init();
-    recHit_.init();
+    init();
 
-    fillDet(detIdObj, subid);
-
-    fillSim(isim);
-    sim_.subdetid = subid;
-
+    DetId detId = ((*it)->geographicalId());
+    unsigned int subid=detId.subdetId();
+    if (! ((subid==1) || 
+	   (subid==2))) {
+      continue;
+    } // end subid if
 
     // Get the geom-detector
     const PixelGeomDetUnit * theGeomDet =
-      dynamic_cast<const PixelGeomDetUnit*> (theTracker.idToDet(detIdObj) );
+      dynamic_cast<const PixelGeomDetUnit*> (theTracker.idToDet(detId) );
     vertex_.z = theGeomDet->surface().position().z();
     vertex_.r = theGeomDet->surface().position().perp();
 
@@ -221,179 +167,72 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
     det_.cols = theGeomDet->specificTopology().ncolumns();
     det_.rows = theGeomDet->specificTopology().nrows();
 
- // Is flipped ?
-    float tmp1 = theGeomDet->surface().toGlobal(Local3DPoint(0.,0.,0.)).perp();
-    float tmp2 = theGeomDet->surface().toGlobal(Local3DPoint(0.,0.,1.)).perp();
-    //cout << " 1: " << tmp1 << " 2: " << tmp2 << endl;
-    if ( tmp2<tmp1 ) sim_.isflipped = 1;
-    else sim_.isflipped = 0;
+    SiPixelRecHitCollection::range pixelrechitRange = (recHitColl.product())->get(detId);
+    SiPixelRecHitCollection::const_iterator pixelrechitRangeIteratorBegin = pixelrechitRange.first;
+    SiPixelRecHitCollection::const_iterator pixelrechitRangeIteratorEnd = pixelrechitRange.second;
+    SiPixelRecHitCollection::const_iterator pixeliter = pixelrechitRangeIteratorBegin;
+    std::vector<PSimHit> matched;
+
+    //----Loop over rechits for this detId
+    for ( ; pixeliter != pixelrechitRangeIteratorEnd; ++pixeliter) {
  
-    // Get topology
-    const RectangularPixelTopology * topol = 
-      dynamic_cast<const RectangularPixelTopology*>(&(theGeomDet->specificTopology()));
+        matched.clear();
+        matched = associate.associateHit(*pixeliter);
+
+        fillRecHit(pixeliter);
+
+        if (!matched.empty()) {
+
+           //---Loop over sim hits, fill closest
+	   float closest=9999.;
+	   std::vector<PSimHit>::const_iterator old = matched.begin();
+
+	   for (std::vector<PSimHit>::const_iterator m = matched.begin(); m<matched.end(); m++) {
+        	fillSim(m, subid, theGeomDet);
+		float x_res = sim_.x - recHit_.x;
+
+		if (x_res < closest) {
+		   closest = x_res;
+		} else {
+		   fillSim(old, subid, theGeomDet);
+		}
+	
+	   } // end sim hit loop
+
+	  edm::Ref<edm::DetSetVector<SiPixelCluster>, SiPixelCluster> const& clust = pixeliter->cluster();
+
+	  fillClust(*clust);
+       	   
+	  fillDet(detId, subid);
+
+          // Get the geom-detector
+         const PixelGeomDetUnit * theGeomDet =
+      		dynamic_cast<const PixelGeomDetUnit*> (theTracker.idToDet(detId) );
+    	 vertex_.z = theGeomDet->surface().position().z();
+    	 vertex_.r = theGeomDet->surface().position().perp();
     
-
-    //------------------------------------------------------------------------
-    //--- Find the matching PixelCluster by iterating over the Clusters for
-    //--- this DetUnit and finding the closest one.
-    //------------------------------------------------------------------------
-
-    float dr_min=99999., dx=99999., dy=99999.;
-    //const SiPixelClusterCollection::Range clustRange = 
-     // clustColl->get(detIdObj());
-
-    edm::DetSet<SiPixelCluster>::const_iterator clustIt;
-    edm::DetSet<SiPixelCluster>::const_iterator matchIt = DSViter->data.end(); //end 
-
-    for (clustIt = DSViter->data.begin(); clustIt != DSViter->data.end(); 
-	 ++clustIt ) {
-      //
-      float x = clustIt->x();
-      float y = clustIt->y();
-      //
-      LocalPoint lp = topol->localPosition(MeasurementPoint(x,y));
-      if(PRINT)cout<<lp.x()<<" "<<lp.y()<<endl;
-      //
-      float dr = 
-	(sim_.x-lp.x())*(sim_.x-lp.x()) + (sim_.y-lp.y())*(sim_.y-lp.y());
-      if (dr < dr_min){
-        matchIt = clustIt;
-	dr_min=dr;
-	clust_.x = lp.x();
-	clust_.y = lp.y();
-      }  
-      if (PRINT) cout<<"simhit "<<sim_.x<<" "<<sim_.y<<" "<<dr<<endl;
-    }
-    
-
-    //--- If there was a match, capture the cluster quantities
-    if (dr_min < 99999.) { 
-      fillClust(matchIt);           // copy relevant stuff from matchIt into clust_
-    }
-    else {
-      clust_.init();            // wipe it all out
-    }
-      
-      
-
-    //------------------------------------------------------------------------
-    //--- Find the matching PixelRecHit by iterating over the RecHits for
-    //--- this DetUnit and finding the closest one.
-    //------------------------------------------------------------------------
+  	 det_.thickness = theGeomDet->specificSurface().bounds().thickness();
+    	 det_.cols = theGeomDet->specificTopology().ncolumns();
+	 det_.rows = theGeomDet->specificTopology().nrows();
 
 
-    float dr_rh0=99999., dx_rh=99999., dy_rh=99999.;
+	 //++++++++++
+    	    t_->Fill();
+   	 //++++++++++
+       	 init();
 
-    SiPixelRecHitCollection::range rechitRange = recHitColl->get(detIdObj);
-    SiPixelRecHitCollection::const_iterator rechitIt; 
-    for (rechitIt = rechitRange.first; rechitIt != rechitRange.second; 
-         ++rechitIt ) {
-      LocalPoint lp = rechitIt->localPosition();
-      LocalError le = rechitIt->localPositionError();
-      float dr_rh = 
-        (sim_.x-lp.x())*(sim_.x-lp.x()) + (sim_.y-lp.y())*(sim_.y-lp.y());
+	} // end matched if
 
-      if(dr_rh<dr_rh0){
-        dr_rh0=dr_rh;
-	fillRecHit(lp,le);
-      }
-      if(PRINT)cout<<"---> rechit found: x " << lp.x() <<"  y "<<lp.y() << " distance " << dr_rh0 << endl;
-    }
+    } // end rechit loop	
 
-    if(dr_rh0==99999.) {
-      recHit_.x = 9999.;
-      recHit_.y = 9999.;
-    }
-    
+  } //end det loop
 
+} // end analyze function
 
+void PixelNtuplizer::fillRecHit(SiPixelRecHitCollection::const_iterator pixeliter) {
+	LocalPoint lp = pixeliter->localPosition();
+	LocalError le = pixeliter->localPositionError();
 
-//     const SiPixelRecHitCollection::Range recHitRange = 
-//       recHitColl->get(detIdObj());
-    
-//     SiPixelRecHitCollection::ContainerIterator recHitIt;
-//     SiPixelRecHitCollection::ContainerIterator rmatchIt = recHitRange.second; //end 
-
-//     float dr0=99999., dx=99999., dy=99999.;
-//     for (recHitIt = recHitRange.first; recHitIt != recHitRange.second; 
-// 	 ++recHitIt ) {
-//       //
-//       float x = recHitIt->x();
-//       float y = recHitIt->y();
-//       //
-//       LocalPoint lp = topol->localPosition(MeasurementPoint(x,y));
-//       if(PRINT)cout<<lp.x()<<" "<<lp.y()<<endl;
-//       //
-//       float dr = 
-// 	(sim_.x-lp.x())*(sim_.x-lp.x()) + (sim_.y-lp.y())*(sim_.y-lp.y());
-//       if (dr < dr_min){
-// 	// &&& Instead, let's store the iterator and then fill in all the
-// 	// &&& vars for that hit
-//         rmatchIt = recHitIt;
-// 	dr_min=dr;
-// 	recHit_.x = lp.x();
-// 	recHit_.y = lp.y();
-//       }  
-//       if (PRINT) cout<<"simhit "<<sim_.x<<" "<<sim_.y<<" "<<dr<<endl;
-//     }
-    
-
-//     //--- If there was a match, capture the recHiter quantities
-//     if (dr_min < 99999.) { 
-//       fillRecHit(rmatchIt);           // copy relevant stuff from rmatchIt into recHit_
-//     }
-//     else {
-//       recHit_.init();            // wipe it all out
-//       //if(PRINT) cout<<" no match for this hit "<<endl;
-//     }
-
-
-
-    //++++++++++
-    t_->Fill();
-    //++++++++++
-
-  }
-}
-
-// void PixelNtuplizer::fillRecHit( SiPixelRecHitCollection::ContainerIterator recHitIt)
-// {
-//       LocalPoint lp = rechitIt->localPosition();
-//       LocalError le = rechitIt->localPositionError();
-//       float dr_rh = 
-// 	(sim_xpos-lp.x())*(sim_xpos-lp.x()) + (sim_ypos-lp.y())*(sim_ypos-lp.y());
-//
-//       if(dr_rh<dr_rh0){
-// 	dr_rh0=dr_rh;
-// 	recHit_.x = lp.x();
-// 	recHit_.y = lp.y();
-// 	recHit_.xx = le.xx();
-// 	recHit_.xy = le.xy();
-// 	recHit_.yy = le.yy();
-//       }
-//       if(PRINT)cout<<"---> rechit found: x " << lp.x() <<"  y "<<lp.y() << " distance " << dr_rh0 << endl;
-//     }
-//
-//     if(dr_rh0==99999.) {
-//       recHit_.x = 9999.;
-//       recHit_.y = 9999.;
-//     }
-//    
-//     if(dr0<99999.) { // some match was found
-//       if(PRINT) cout<<"match "<<dr0<<" "<<dx<<" "<<dy<<endl;
-//       //hdr->Fill(sqrt(dr0)*10000.);
-//       //hresX1->Fill(dx);
-//       //hresY1->Fill(dy);
-//     } else {
-//       //hdr->Fill(999.);
-//       if(PRINT) cout<<" no match for this hit "<<endl;
-//       clust_.x = 9999.;
-//       clust_.y = 9999.;
-//     }
-//
-// }
-
-void PixelNtuplizer::fillRecHit(LocalPoint lp, LocalError le) {
         recHit_.x = lp.x();
         recHit_.y = lp.y();
         recHit_.xx = le.xx();
@@ -402,7 +241,7 @@ void PixelNtuplizer::fillRecHit(LocalPoint lp, LocalError le) {
 }
 
 
-void PixelNtuplizer::fillSim(std::vector<PSimHit>::iterator isim) {
+void PixelNtuplizer::fillSim(std::vector<PSimHit>::const_iterator isim, unsigned int subid, const PixelGeomDetUnit * theGeomDet) {
     float sim_x1 = (*isim).entryPoint().x(); // width (row index, in col direction)
     float sim_y1 = (*isim).entryPoint().y(); // length (col index, in row direction) 
     float sim_x2 = (*isim).exitPoint().x();
@@ -420,10 +259,18 @@ void PixelNtuplizer::fillSim(std::vector<PSimHit>::iterator isim) {
     sim_.theta = (*isim).thetaAtEntry();
     sim_.PID = (*isim).particleType();
     sim_.TID = (*isim).trackId();
+    sim_.subdetid = subid;
 
     //--- Fill alpha and beta -- more useful for exploring the residuals...
     sim_.beta  = atan2(sim_.pz, sim_.py);
     sim_.alpha = atan2(sim_.pz, sim_.px);
+
+ // Is flipped ?
+    float tmp1 = theGeomDet->surface().toGlobal(Local3DPoint(0.,0.,0.)).perp();
+    float tmp2 = theGeomDet->surface().toGlobal(Local3DPoint(0.,0.,1.)).perp();
+    //cout << " 1: " << tmp1 << " 2: " << tmp2 << endl;
+    if ( tmp2<tmp1 ) sim_.isflipped = 1;
+    else sim_.isflipped = 0;
  }
 
 
@@ -447,7 +294,7 @@ void PixelNtuplizer::fillDet(DetId &tofill, int subdetid)
 }
 
 void 
-PixelNtuplizer::fillClust(SiPixelClusterCollection::ContainerIterator & matchIt)
+PixelNtuplizer::fillClust(const SiPixelCluster & matchIt) 
 {
 
   //       if(PRINT) cout<<"clus "<<ch<<" "<<size<<" "<<sizeX<<" "<<sizeY<<" "
@@ -456,23 +303,30 @@ PixelNtuplizer::fillClust(SiPixelClusterCollection::ContainerIterator & matchIt)
   //       if(PRINT) cout<<"match "<<dr0<<" "<<dx<<" "<<dy<<endl;
   
   //const vector<Pixel>  = clustIt->pixels();
-  clust_.charge = (matchIt->charge())/1000.; // convert ke to electrons
-  clust_.size = matchIt->size();
-  clust_.size_x = matchIt->sizeX();
-  clust_.size_y = matchIt->sizeY();
-  clust_.x = matchIt->x();
-  clust_.y = matchIt->y();
-  clust_.maxPixelCol = matchIt->maxPixelCol();
-  clust_.maxPixelRow = matchIt->maxPixelRow();
-  clust_.minPixelCol = matchIt->minPixelCol();
-  clust_.minPixelRow = matchIt->minPixelRow();
+  clust_.charge = (matchIt.charge())/1000.; // convert ke to electrons
+  clust_.size = matchIt.size();
+  clust_.size_x = matchIt.sizeX();
+  clust_.size_y = matchIt.sizeY();
+  clust_.x = matchIt.x();
+  clust_.y = matchIt.y();
+  clust_.maxPixelCol = matchIt.maxPixelCol();
+  clust_.maxPixelRow = matchIt.maxPixelRow();
+  clust_.minPixelCol = matchIt.minPixelCol();
+  clust_.minPixelRow = matchIt.minPixelRow();
   
-  clust_.geoId = matchIt->geographicalId();
-  clust_.edgeHitX = matchIt->edgeHitX();
-  clust_.edgeHitY = matchIt->edgeHitY();
+  clust_.geoId = matchIt.geographicalId();
+  clust_.edgeHitX = matchIt.edgeHitX();
+  clust_.edgeHitY = matchIt.edgeHitY();
 }
 
-
+void PixelNtuplizer::init() {
+	det_.init();
+	vertex_.init();
+	clust_.init();
+	sim_.init();
+	track_.init();
+	recHit_.init();
+}
 
 void PixelNtuplizer::Det::init()
 {
