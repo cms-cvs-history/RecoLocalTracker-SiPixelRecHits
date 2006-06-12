@@ -12,7 +12,6 @@
  *
  ************************************************************/
 
-#include "DataFormats/SiPixelCluster/interface/SiPixelClusterCollection.h"
 #include "DataFormats/TrackerRecHit2D/interface/SiPixelRecHitCollection.h"
 
 #include "FWCore/Framework/interface/EDAnalyzer.h"

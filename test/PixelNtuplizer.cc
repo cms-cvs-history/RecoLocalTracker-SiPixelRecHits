@@ -12,7 +12,6 @@
 
 // DataFormats
 #include "DataFormats/TrackerRecHit2D/interface/SiPixelRecHitCollection.h"
-#include "DataFormats/SiPixelCluster/interface/SiPixelClusterCollection.h"
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/SiPixelDetId/interface/PXBDetId.h" 
 #include "DataFormats/SiPixelDetId/interface/PXFDetId.h" 
