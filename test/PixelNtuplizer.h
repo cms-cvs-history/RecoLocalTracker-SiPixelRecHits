@@ -28,9 +28,12 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "SimDataFormats/TrackingHit/interface/PSimHit.h"
+#include "SimDataFormats/Track/interface/EmbdSimTrack.h"
+#include "SimDataFormats/Track/interface/EmbdSimTrackContainer.h"
 
 class TTree;
 class TFile;
+class RectangularPixelTopology;
 
 class PixelNtuplizer : public edm::EDAnalyzer
 {
@@ -43,16 +46,28 @@ class PixelNtuplizer : public edm::EDAnalyzer
   virtual void analyze(const edm::Event& e, const edm::EventSetup& es);
 
  protected:
-  void fillClust (const SiPixelCluster &);
-  void fillRecHit(SiPixelRecHitCollection::const_iterator);
+  void fillClust (const SiPixelCluster &, const RectangularPixelTopology *,const PixelGeomDetUnit *);
+  void fillRecHit(SiPixelRecHitCollection::const_iterator, const RectangularPixelTopology *,const PixelGeomDetUnit *);
   void fillDet(DetId &, int );
-  void fillSim(std::vector<PSimHit>::const_iterator, unsigned int, const PixelGeomDetUnit * ); 
+  void fillSim(std::vector<PSimHit>::const_iterator, unsigned int, const PixelGeomDetUnit *,
+  	       const RectangularPixelTopology *); 
+  void fillTrack(const edm::EmbdSimTrackContainer& trks);
+  void fillPix(const SiPixelCluster &, const RectangularPixelTopology *,const PixelGeomDetUnit *);
+  void fillEvt(const edm::Event& );
  
  private:
   edm::ParameterSet conf_;
   void init();
   
   //--- Structures for ntupling:
+  struct evt
+  {
+    int run;
+    int evtnum;
+    
+    void init();
+  } evt_;
+  
   struct Det 
   {
     float thickness;
@@ -104,14 +119,22 @@ class PixelNtuplizer : public edm::EDAnalyzer
     float beta;
     int PID;
     unsigned int TID;
-
-
+    float x1, x2; // entry and exit points
+    float y1, y2;
+    float z1, z2;
+    float row1, row2; //entry and exit row/columns
+    float col1, col2;
+    float gx1, gx2; //global locales
+    float gy1, gy2;
+    float gz1, gz2;
 
     void init();
   } sim_;
 
   struct clust 
   {
+    float row;
+    float col;
     float x;
     float y;
     float charge;
@@ -125,9 +148,27 @@ class PixelNtuplizer : public edm::EDAnalyzer
     unsigned int geoId;
     bool edgeHitX;
     bool edgeHitY;
+    
 
     void init();
   } clust_;
+  
+  static const int maxpix = 100;
+  struct pixinfo
+  {
+    int npix;
+    float row[maxpix];
+    float col[maxpix];
+    float adc[maxpix];
+    // Just added
+    float x[maxpix];
+    float y[maxpix];
+    float gx[maxpix];
+    float gy[maxpix];
+    float gz[maxpix];
+    
+    void init();
+  } pixinfo_;
 
 
   struct RecHit 
@@ -137,6 +178,11 @@ class PixelNtuplizer : public edm::EDAnalyzer
     float xx;
     float xy;
     float yy;
+    float row;
+    float col;
+    float gx;
+    float gy;
+    float gz;
 
     void init();
   } recHit_;
