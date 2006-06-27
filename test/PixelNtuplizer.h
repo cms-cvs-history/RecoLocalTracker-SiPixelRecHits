@@ -3,12 +3,6 @@
 
 /** \class PixelNtuplizer
  *
- * PixelNtuplizer is the EDProducer subclass which finds seeds
- *
- * \author Oliver Gutsche, Fermilab
- *
- * \version   1st Version Aug. 01, 2005  
-
  *
  ************************************************************/
 
@@ -28,8 +22,9 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "SimDataFormats/TrackingHit/interface/PSimHit.h"
-#include "SimDataFormats/Track/interface/EmbdSimTrack.h"
-#include "SimDataFormats/Track/interface/EmbdSimTrackContainer.h"
+
+#include "SimDataFormats/Track/interface/SimTrack.h"
+#include "SimDataFormats/Track/interface/SimTrackContainer.h"
 
 class TTree;
 class TFile;
@@ -51,7 +46,7 @@ class PixelNtuplizer : public edm::EDAnalyzer
   void fillDet(DetId &, int );
   void fillSim(std::vector<PSimHit>::const_iterator, unsigned int, const PixelGeomDetUnit *,
   	       const RectangularPixelTopology *); 
-  void fillTrack(const edm::EmbdSimTrackContainer& trks);
+  void fillTrack(const edm::SimTrackContainer& trks);
   void fillPix(const SiPixelCluster &, const RectangularPixelTopology *,const PixelGeomDetUnit *);
   void fillEvt(const edm::Event& );
  

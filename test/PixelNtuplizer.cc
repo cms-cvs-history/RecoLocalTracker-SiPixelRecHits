@@ -2,13 +2,14 @@
 // Description:  see PixelNtuplizer.h
 // Authors:  Petar Maksimovic, Jason Shaev, JHU...Vincenzo Chiochia, CERN
 // History: 4/4/06   creation, new version: 6/6/06
+// Change the EmbdSimTracks to SimTracls. 27/6/06 d.k.
 //--------------------------------------------
 /*
    The new version works by iterating over all detids. It then grabs rechits from the collection based upon this detid. This rechit can then be associated to a sim hit using the TrackerAssociator tool. It grabs the cluster using the cluster function of the rec hit.
 */
 	
-#include "RecoLocalTracker/SiPixelRecHits/test/PixelNtuplizer.h"
 
+#include "RecoLocalTracker/SiPixelRecHits/test/PixelNtuplizer.h"
 
 // DataFormats
 #include "DataFormats/TrackerRecHit2D/interface/SiPixelRecHitCollection.h"
@@ -33,8 +34,8 @@
 // SimDataFormats
 //#include "SimDataFormats/TrackingHit/interface/PSimHit.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
-#include "SimDataFormats/Track/interface/EmbdSimTrack.h"
-#include "SimDataFormats/Vertex/interface/EmbdSimVertex.h"
+//#include "SimDataFormats/Track/interface/SimTrack.h"
+//#include "SimDataFormats/Track/interface/SimTrackContainer.h"
 #include "SimTracker/TrackerHitAssociation/interface/TrackerHitAssociator.h"
 
 #include "FWCore/Framework/interface/Handle.h"
@@ -152,7 +153,7 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
     << " Pixel RecHits" << std::endl;
 
   //--- Get the simtracks for matching
-  Handle<edm::EmbdSimTrackContainer> simtracks;
+  Handle<edm::SimTrackContainer> simtracks;
   e.getByLabel("SimG4Object",simtracks);
 
   bool PRINT = true;
@@ -404,7 +405,7 @@ PixelNtuplizer::fillPix(const SiPixelCluster & LocPix,
 }
 
 void 
-PixelNtuplizer::fillTrack(const edm::EmbdSimTrackContainer& trks) {
+PixelNtuplizer::fillTrack(const edm::SimTrackContainer& trks) {
 //  std::cout << "Looking for simtrack number " << sim_.TID << std::endl;
 //  for (unsigned int i=0; i<trks.size(); ++i) {
 //    std::cout << i << ": " << trks[i] << std::endl;
