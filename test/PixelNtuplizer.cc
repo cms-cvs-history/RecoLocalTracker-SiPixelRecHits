@@ -2,14 +2,13 @@
 // Description:  see PixelNtuplizer.h
 // Authors:  Petar Maksimovic, Jason Shaev, JHU...Vincenzo Chiochia, CERN
 // History: 4/4/06   creation, new version: 6/6/06
-// Change the EmbdSimTracks to SimTracls. 27/6/06 d.k.
 //--------------------------------------------
 /*
    The new version works by iterating over all detids. It then grabs rechits from the collection based upon this detid. This rechit can then be associated to a sim hit using the TrackerAssociator tool. It grabs the cluster using the cluster function of the rec hit.
 */
 	
-
 #include "RecoLocalTracker/SiPixelRecHits/test/PixelNtuplizer.h"
+
 
 // DataFormats
 #include "DataFormats/TrackerRecHit2D/interface/SiPixelRecHitCollection.h"
@@ -34,8 +33,8 @@
 // SimDataFormats
 //#include "SimDataFormats/TrackingHit/interface/PSimHit.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
-//#include "SimDataFormats/Track/interface/SimTrack.h"
-//#include "SimDataFormats/Track/interface/SimTrackContainer.h"
+#include "SimDataFormats/Track/interface/EmbdSimTrack.h"
+#include "SimDataFormats/Vertex/interface/EmbdSimVertex.h"
 #include "SimTracker/TrackerHitAssociation/interface/TrackerHitAssociator.h"
 
 #include "FWCore/Framework/interface/Handle.h"
@@ -135,6 +134,9 @@ void PixelNtuplizer::beginJob(const edm::EventSetup& es)
 void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
 {
   using namespace edm;
+
+  const bool PRINT = true;
+
   std::string rechitProducer = conf_.getParameter<std::string>("RecHitProducer");
 
   // Get event setup (to get global transformation)
@@ -153,10 +155,8 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
     << " Pixel RecHits" << std::endl;
 
   //--- Get the simtracks for matching
-  Handle<edm::SimTrackContainer> simtracks;
+  Handle<edm::EmbdSimTrackContainer> simtracks;
   e.getByLabel("SimG4Object",simtracks);
-
-  bool PRINT = true;
 
   TrackerHitAssociator associate(e);
 
@@ -181,8 +181,6 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
     vertex_.z = theGeomDet->surface().position().z();
     vertex_.r = theGeomDet->surface().position().perp();
 
-    const BoundPlane& plane = theGeomDet->surface(); //for transf.
-    
     det_.thickness = theGeomDet->specificSurface().bounds().thickness();
     det_.cols = theGeomDet->specificTopology().ncolumns();
     det_.rows = theGeomDet->specificTopology().nrows();
@@ -195,18 +193,22 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
 
     //----Loop over rechits for this detId
     for ( ; pixeliter != pixelrechitRangeIteratorEnd; ++pixeliter) {
+
+	   edm::Ref<edm::DetSetVector<SiPixelCluster>, SiPixelCluster> const& clust = pixeliter->cluster();
+
+	  const RectangularPixelTopology * topol = 
+         dynamic_cast<const RectangularPixelTopology*>(&(theGeomDet->specificTopology()));
+
+	  fillEvt(e);
+	  
+	  fillClust(*clust, topol, theGeomDet);
+       	   
+	  fillDet(detId, subid);
+
+	 fillPix(*clust, topol, theGeomDet);
  
         matched.clear();
         matched = associate.associateHit(*pixeliter);
-
-	 // Get the geom-detector
-         const PixelGeomDetUnit * theGeomDet =
-      		dynamic_cast<const PixelGeomDetUnit*> (theTracker.idToDet(detId) );
-    	 vertex_.z = theGeomDet->surface().position().z();
-    	 vertex_.r = theGeomDet->surface().position().perp();
-	 
-	  const RectangularPixelTopology * topol = 
-         dynamic_cast<const RectangularPixelTopology*>(&(theGeomDet->specificTopology()));
 
 	  fillRecHit(pixeliter, topol, theGeomDet);
 
@@ -228,20 +230,9 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
 	
 	   } // end sim hit loop
 
-	   edm::Ref<edm::DetSetVector<SiPixelCluster>, SiPixelCluster> const& clust = pixeliter->cluster();
-
-	  fillEvt(e);
-	  
-	  fillClust(*clust, topol, theGeomDet);
-       	   
-	  fillDet(detId, subid);
 
 	  fillTrack(*(simtracks.product()));
     
-  	 det_.thickness = theGeomDet->specificSurface().bounds().thickness();
-    	 det_.cols = theGeomDet->specificTopology().ncolumns();
-	 det_.rows = theGeomDet->specificTopology().nrows();
-	 
 	 fillPix(*clust, topol, theGeomDet);
 
 
@@ -405,7 +396,7 @@ PixelNtuplizer::fillPix(const SiPixelCluster & LocPix,
 }
 
 void 
-PixelNtuplizer::fillTrack(const edm::SimTrackContainer& trks) {
+PixelNtuplizer::fillTrack(const edm::EmbdSimTrackContainer& trks) {
 //  std::cout << "Looking for simtrack number " << sim_.TID << std::endl;
 //  for (unsigned int i=0; i<trks.size(); ++i) {
 //    std::cout << i << ": " << trks[i] << std::endl;
