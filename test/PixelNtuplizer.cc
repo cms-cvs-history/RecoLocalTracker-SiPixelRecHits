@@ -151,7 +151,7 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
 
   //--- Get the simtracks for matching
   Handle<edm::SimTrackContainer> simtracks;
-  e.getByLabel("SimG4Object",simtracks);
+  e.getByLabel("g4SimHits",simtracks);
 
   TrackerHitAssociator associate(e);
 
