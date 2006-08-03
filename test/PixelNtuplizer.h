@@ -12,6 +12,7 @@
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/Handle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
+#include "FWCore/ParameterSet/interface/InputTag.h"
 
 #include "DataFormats/Common/interface/EDProduct.h"
 #include "DataFormats/Common/interface/Ref.h"
@@ -52,6 +53,7 @@ class PixelNtuplizer : public edm::EDAnalyzer
  
  private:
   edm::ParameterSet conf_;
+  edm::InputTag src_;
   void init();
   
   //--- Structures for ntupling:

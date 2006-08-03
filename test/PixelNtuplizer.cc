@@ -56,7 +56,10 @@ using namespace std;
 using namespace edm;
 
 PixelNtuplizer::PixelNtuplizer(edm::ParameterSet const& conf) : 
-  conf_(conf), tfile_(0), t_(0)
+  conf_(conf), 
+  tfile_(0), 
+  t_(0), 
+  src_( conf.getParameter<edm::InputTag>( "src" ) )
 {
 }
 
@@ -79,7 +82,8 @@ void PixelNtuplizer::beginJob(const edm::EventSetup& es)
   std::cout << " PixelNtuplizer::beginJob" << std::endl;
 
   // put here whatever you want to do at the beginning of the job
-  tfile_ = new TFile ( "pix_ntuple.root", "RECREATE" );
+  std::string outputFile = conf_.getParameter<std::string>("OutputFile");
+  tfile_ = new TFile ( outputFile.c_str() , "RECREATE" );
 
 
   t_ = new TTree("PixNtuple","Pixel hit analyzer ntuple");
@@ -132,7 +136,7 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
   const bool PRINT = true;
 
   using namespace edm;
-  std::string rechitProducer = conf_.getParameter<std::string>("RecHitProducer");
+  //std::string rechitProducer = conf_.getParameter<std::string>("RecHitProducer");
 
   // Get event setup (to get global transformation)
   edm::ESHandle<TrackerGeometry> geom;
@@ -140,9 +144,9 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
   const TrackerGeometry& theTracker(*geom);
 
   //--- Fetch Pixel RecHits
-  std::string recHitCollLabel = conf_.getUntrackedParameter<std::string>("RecHitCollLabel","pixRecHitConverter");
+  //std::string recHitCollLabel = conf_.getUntrackedParameter<std::string>("RecHitCollLabel","pixRecHitConverter");
   edm::Handle<SiPixelRecHitCollection> recHitColl;
-  e.getByLabel(recHitCollLabel, recHitColl);
+  e.getByLabel( src_ , recHitColl);
   
   std::cout 
     <<" FOUND " 
