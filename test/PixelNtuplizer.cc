@@ -394,12 +394,18 @@ PixelNtuplizer::fillPix(const SiPixelCluster & LocPix,
 
 void 
 PixelNtuplizer::fillTrack(const edm::SimTrackContainer& trks) {
-//  std::cout << "Looking for simtrack number " << sim_.TID << std::endl;
-//  for (unsigned int i=0; i<trks.size(); ++i) {
-//    std::cout << i << ": " << trks[i] << std::endl;
-//  }
-  track_.eta = trks[sim_.TID].momentum().eta();
-  track_.phi = trks[sim_.TID].momentum().phi();
+
+  SimTrackContainer::const_iterator trksiter;
+  for(trksiter = trks.begin(); trksiter != trks.end(); trksiter++) {
+
+    if ( trksiter->trackId() == (sim_.TID - 1) ) {
+      track_.eta = trksiter->momentum().eta();
+      track_.phi = trksiter->momentum().phi();
+    }
+  }
+
+  //track_.eta = trks[sim_.TID].momentum().eta();
+  //track_.phi = trks[sim_.TID].momentum().phi();
 }
 
 void
