@@ -157,7 +157,7 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
   Handle<edm::SimTrackContainer> simtracks;
   e.getByLabel("g4SimHits",simtracks);
 
-  TrackerHitAssociator associate(e);
+  TrackerHitAssociator associate( e, conf_ );
 
   //-----Iterate over detunits
    for (TrackerGeometry::DetContainer::const_iterator it = geom->dets().begin(); it != geom->dets().end(); it++) {
