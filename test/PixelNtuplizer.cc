@@ -225,9 +225,11 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
 
 		if (x_res < closest) {
 		   closest = x_res;
+		   old = m;
 		} else {
 		   fillSim(old, subid, theGeomDet, topol);
 		}
+		
 	
 	   } // end sim hit loop
 
