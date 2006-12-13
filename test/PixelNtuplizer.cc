@@ -157,7 +157,6 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
   TrackerHitAssociator associate( e, conf_ );
 
   //-----Iterate over detunits
-<<<<<<< PixelNtuplizer.cc
   for (TrackerGeometry::DetContainer::const_iterator it = geom->dets().begin(); it != geom->dets().end(); it++) 
     {
       //--- Since TTree::Fill() will simply take a snapshot of what's 
@@ -212,78 +211,6 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
 		  float y_res = simhity - rechity;
 		  
 		  float dist = sqrt( x_res*x_res + y_res*y_res );		  
-=======
-   for (TrackerGeometry::DetContainer::const_iterator it = geom->dets().begin(); it != geom->dets().end(); it++) {
-
-    //--- Since TTree::Fill() will simply take a snapshot of what's 
-    //--- in the memory, we need to re-initialize the cache used for 
-    //--- each of the branches.
-    init();
-
-    DetId detId = ((*it)->geographicalId());
-    unsigned int subid=detId.subdetId();
-    if (! ((subid==1) || 
-	   (subid==2))) {
-      continue;
-    } // end subid if
-
-    // Get the geom-detector
-    const PixelGeomDetUnit * theGeomDet =
-      dynamic_cast<const PixelGeomDetUnit*> (theTracker.idToDet(detId) );
-    vertex_.z = theGeomDet->surface().position().z();
-    vertex_.r = theGeomDet->surface().position().perp();
-
-    const BoundPlane& plane = theGeomDet->surface(); //for transf.
-    
-    det_.thickness = theGeomDet->specificSurface().bounds().thickness();
-    det_.cols = theGeomDet->specificTopology().ncolumns();
-    det_.rows = theGeomDet->specificTopology().nrows();
-
-    SiPixelRecHitCollection::range pixelrechitRange = (recHitColl.product())->get(detId);
-    SiPixelRecHitCollection::const_iterator pixelrechitRangeIteratorBegin = pixelrechitRange.first;
-    SiPixelRecHitCollection::const_iterator pixelrechitRangeIteratorEnd = pixelrechitRange.second;
-    SiPixelRecHitCollection::const_iterator pixeliter = pixelrechitRangeIteratorBegin;
-    std::vector<PSimHit> matched;
-
-    //----Loop over rechits for this detId
-    for ( ; pixeliter != pixelrechitRangeIteratorEnd; ++pixeliter) {
- 
-        matched.clear();
-        matched = associate.associateHit(*pixeliter);
-
-	  const RectangularPixelTopology * topol = 
-         dynamic_cast<const RectangularPixelTopology*>(&(theGeomDet->specificTopology()));
-
-	  fillRecHit(pixeliter, topol, theGeomDet);
-
-	  fillEvt(e);
-
-	  fillDet(detId, subid);
-
-	edm::Ref<edm::DetSetVector<SiPixelCluster>, SiPixelCluster> const& clust = pixeliter->cluster();
-
-	 fillPix(*clust, topol, theGeomDet);
- 
-	  fillClust(*clust, topol, theGeomDet);
-
-        if (!matched.empty()) {
-
-           //---Loop over sim hits, fill closest
-	   float closest=9999.;
-	   std::vector<PSimHit>::const_iterator old = matched.begin();
-
-	   for (std::vector<PSimHit>::const_iterator m = matched.begin(); m<matched.end(); m++) {
-        	fillSim(m, subid, theGeomDet, topol);
-		float x_res = sim_.x - recHit_.x;
-
-		if (x_res < closest) {
-		   closest = x_res;
-		   old = m;
-		} else {
-		   fillSim(old, subid, theGeomDet, topol);
-		}
-		
->>>>>>> 1.15
 	
 		  if ( dist < closest_dist ) 
 		    {
