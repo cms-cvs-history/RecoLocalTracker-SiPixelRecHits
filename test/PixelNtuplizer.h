@@ -184,8 +184,14 @@ class PixelNtuplizer : public edm::EDAnalyzer
     void init();
   } recHit_;
 
+  int nsimhit; // number of simhits associated with a rechit
+
   TFile * tfile_;
   TTree * t_;
+  
+  bool checkType_; // do we check that the simHit associated with recHit is of the expected particle type ?
+  int genType_; // the type of particle that the simHit associated with recHits should be
+
 };
 
 
