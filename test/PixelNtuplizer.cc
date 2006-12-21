@@ -9,6 +9,9 @@
 //  - the particle code is given by    genType_
 //                   - added nsimhits - number of simhits associated with 
 //                                      a rechit 
+//                   - added alpha and beta from cluster position (12/18/06)
+//                   - make clust_.edgeHitX and clust_.edgeHitY of type int
+//
 //----------------------------------------------------------------------
 
 #include "RecoLocalTracker/SiPixelRecHits/test/PixelNtuplizer.h"
@@ -42,7 +45,6 @@
 #include "FWCore/Framework/interface/Handle.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
-
 // For ROOT
 #include <TROOT.h>
 // #include <TChain.h>
@@ -61,10 +63,10 @@ using namespace std;
 using namespace edm;
 
 PixelNtuplizer::PixelNtuplizer(edm::ParameterSet const& conf) : 
-  conf_(conf), 
+  conf_(conf),
+  src_( conf.getParameter<edm::InputTag>( "src" ) ),
   tfile_(0), 
   t_(0), 
-  src_( conf.getParameter<edm::InputTag>( "src" ) ),
   checkType_(conf.getParameter<bool>("checkType") ), //do we check that the simHit associated with recHit is of the expected particle type ?
   genType_(conf.getParameter<int>("genType") ) // the type of particle that the simHit associated with recHits should be
 {}
@@ -105,7 +107,7 @@ void PixelNtuplizer::beginJob(const edm::EventSetup& es)
   t_->Branch("sim",   &sim_, "x/F:y/F:px/F:py/F:pz/F:eloss/F:phi/F:theta/F:subdetid/I:isflipped/I:alpha/F:beta/F:PID/I:TID/i:x1/F:x2:y1:y2:z1:z2:row1:row2:col1:col2:gx1:gx2:gy1:gy2:gz1:gz2", bufsize);
   
   std::cout << "Making cluster branch:" << std::endl;
-  t_->Branch("clust", &clust_, "row/F:col/F:x/F:y/F:charge/F:size/I:size_x/I:size_y/I:maxPixelCol/I:maxPixelRow/I:minPixelCol/I:minPixelRow/I:geoId/i:edgeHitX/O:edgeHitY/O", bufsize);
+  t_->Branch("clust", &clust_, "row/F:col/F:x/F:y/F:charge/F:size/I:size_x/I:size_y/I:maxPixelCol/I:maxPixelRow/I:minPixelCol/I:minPixelRow/I:geoId/i:edgeHitX/I:edgeHitY/I:clust_alpha/F:clust_beta/F", bufsize);
   
   std::cout << "Making pixinfo branch:" << std::endl;
   t_->Branch("npix", &pixinfo_.npix, "npix/I", bufsize);
@@ -119,10 +121,7 @@ void PixelNtuplizer::beginJob(const edm::EventSetup& es)
   t_->Branch("gzpix", pixinfo_.gz, "gz[npix]/F", bufsize);
   
   std::cout << "Making recHit branch:" << std::endl;
-  t_->Branch("recHit", &recHit_, "x/F:y:xx:xy:yy:row:col:gx:gy:gz", bufsize);
-
-  // Number of simHits associated with a recHit
-  t_->Branch("nsimhit", &nsimhit, "nsimhit/I", bufsize);
+  t_->Branch("recHit", &recHit_, "x/F:y:xx:xy:yy:row:col:gx:gy:gz:nsimhit/I", bufsize);
 
   std::cout << "Made all branches." << std::endl;
 }
@@ -234,7 +233,7 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
 	      det_.cols = theGeomDet->specificTopology().ncolumns();
 	      det_.rows = theGeomDet->specificTopology().nrows();
 
-	      nsimhit = (int)matched.size();
+	      recHit_.nsimhit = (int)matched.size();
 	      
 	      const RectangularPixelTopology * topol = 
 		dynamic_cast<const RectangularPixelTopology*>(&(theGeomDet->specificTopology()));
@@ -250,12 +249,11 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
 	      fillDet(detId, subid);
 	      
 	      edm::Ref<edm::DetSetVector<SiPixelCluster>, SiPixelCluster> const& clust = pixeliter->cluster();
-	      
+
 	      fillPix(*clust, topol, theGeomDet);
 	      
 	      fillClust(*clust, topol, theGeomDet);
-	      
-
+	      	    
 	      //++++++++++
 	      t_->Fill();
 	      //++++++++++
@@ -364,13 +362,8 @@ void PixelNtuplizer::fillDet(DetId &tofill, int subdetid)
 }
 
 void 
-PixelNtuplizer::fillClust(const SiPixelCluster & matchIt, const RectangularPixelTopology * topol, const PixelGeomDetUnit * PixGeom) 
+PixelNtuplizer::fillClust(const SiPixelCluster& matchIt, const RectangularPixelTopology* topol, const PixelGeomDetUnit* PixGeom) 
 {
-  //       if(PRINT) cout<<"clus "<<ch<<" "<<size<<" "<<sizeX<<" "<<sizeY<<" "
-  // 		    <<x<<" "<<y<<" "<<geoId<<" "<<edgeHitX<<" "
-  // 		    <<edgeHitY<<endl;
-  //       if(PRINT) cout<<"match "<<dr0<<" "<<dx<<" "<<dy<<endl;
-  
   //const vector<Pixel>  = clustIt->pixels();
   clust_.charge = (matchIt.charge())/1000.0; // convert electrons to kilo-electrons
   clust_.size = matchIt.size();
@@ -389,21 +382,64 @@ PixelNtuplizer::fillClust(const SiPixelCluster & matchIt, const RectangularPixel
   clust_.minPixelRow = matchIt.minPixelRow();
   
   clust_.geoId = matchIt.geographicalId();
-
+  
   //clust_.edgeHitX = matchIt.edgeHitX();  // Old methods
   //clust_.edgeHitY = matchIt.edgeHitY(); 
   // Replace with the topology methods
-  int maxPixelCol = matchIt.maxPixelCol();
-  int maxPixelRow = matchIt.maxPixelRow();
-  int minPixelCol = matchIt.minPixelCol();
-  int minPixelRow = matchIt.minPixelRow();
-  // edge method moved to topologu class
-  bool edgeHitX = (topol->isItEdgePixelInX(minPixelRow)) ||
-    (topol->isItEdgePixelInX(maxPixelRow));
-  bool edgeHitY = (topol->isItEdgePixelInY(minPixelCol)) ||
-    (topol->isItEdgePixelInY(maxPixelCol));
-  clust_.edgeHitX = edgeHitX;
-  clust_.edgeHitY = edgeHitY; 
+  // edge method moved to topologi class
+  clust_.edgeHitX = (int) ( topol->isItEdgePixelInX( clust_.minPixelRow ) || topol->isItEdgePixelInX( clust_.maxPixelRow ) );
+  clust_.edgeHitY = (int) ( topol->isItEdgePixelInY( clust_.minPixelCol ) || topol->isItEdgePixelInY( clust_.maxPixelCol ) );
+
+  // calculate alpha and beta from cluster position
+
+  // get cluster center of gravity (of charge)
+  float xcenter = matchIt.x();
+  float ycenter = matchIt.y();
+  
+  // get the cluster position in local coordinates (cm) 
+  LocalPoint mylp = topol->localPosition( MeasurementPoint(xcenter, ycenter) );
+
+  // get the cluster position in global coordinates (cm)
+  GlobalPoint gp = PixGeom->surface().toGlobal( mylp );
+  float gp_mod = sqrt( gp.x()*gp.x() + gp.y()*gp.y() + gp.z()*gp.z() );
+
+  // normalize
+  float gpx = gp.x()/gp_mod;
+  float gpy = gp.y()/gp_mod;
+  float gpz = gp.z()/gp_mod;
+
+  // make a global vector out of the global point; this vector will point from the 
+  // origin of the detector to the cluster
+  GlobalVector gv(gpx, gpy, gpz);
+
+  // make local unit vector along local X axis
+  const Local3DVector lvx(1.0, 0.0, 0.0);
+
+  // get the unit X vector in global coordinates/
+  GlobalVector gvx = PixGeom->surface().toGlobal( lvx );
+
+  // make local unit vector along local Y axis
+  const Local3DVector lvy(0.0, 1.0, 0.0);
+
+  // get the unit Y vector in global coordinates
+  GlobalVector gvy = PixGeom->surface().toGlobal( lvy );
+   
+  // make local unit vector along local Z axis
+  const Local3DVector lvz(0.0, 0.0, 1.0);
+
+  // get the unit Z vector in global coordinates
+  GlobalVector gvz = PixGeom->surface().toGlobal( lvz );
+    
+  // calculate the components of gv (the unit vector pointing to the cluster) 
+  // in the local coordinate system given by the basis {gvx, gvy, gvz}
+  // note that both gv and the basis {gvx, gvy, gvz} are given in global coordinates
+  float gv_dot_gvx = gv.x()*gvx.x() + gv.y()*gvx.y() + gv.z()*gvx.z();
+  float gv_dot_gvy = gv.x()*gvy.x() + gv.y()*gvy.y() + gv.z()*gvy.z();
+  float gv_dot_gvz = gv.x()*gvz.x() + gv.y()*gvz.y() + gv.z()*gvz.z();
+
+  // calculate angles
+  clust_.clust_alpha = atan2( gv_dot_gvz, gv_dot_gvx );
+  clust_.clust_beta  = atan2( gv_dot_gvz, gv_dot_gvy );
 
 }
 
@@ -412,7 +448,7 @@ PixelNtuplizer::fillPix(const SiPixelCluster & LocPix,
 			const RectangularPixelTopology * topol, const PixelGeomDetUnit * PixGeom)
 {
   const std::vector<SiPixelCluster::Pixel>& pixvector = LocPix.pixels();
-  for ( ; pixinfo_.npix < pixvector.size(); ++pixinfo_.npix)
+  for ( ; pixinfo_.npix < (int)pixvector.size(); ++pixinfo_.npix)
     {
       SiPixelCluster::Pixel holdpix = pixvector[pixinfo_.npix];
       pixinfo_.row[pixinfo_.npix] = holdpix.x;
@@ -465,17 +501,15 @@ void PixelNtuplizer::init()
 
 void PixelNtuplizer::evt::init()
 {
-  int dummy_int = 9999;
+  int dummy_int = -9999;
   run = dummy_int;
   evtnum = dummy_int;
 }
 
 void PixelNtuplizer::Det::init()
 {
-  float dummy_float = 9999.0;
-  int dummy_int = 9999;
-  //unsigned int dummy_uint = 9999;
-  //bool dummy_bool = false;
+  float dummy_float = -9999.0;
+  int dummy_int = -9999;
   
   thickness = dummy_float;
   cols  = dummy_int;
@@ -491,10 +525,8 @@ void PixelNtuplizer::Det::init()
 
 void PixelNtuplizer::vertex::init()
 {
-  float dummy_float = 9999.0;
-  int dummy_int = 9999;
-  //unsigned int dummy_uint = 9999;
-  //bool dummy_bool = false;
+  float dummy_float = -9999.0;
+  int dummy_int = -9999;
 
   num = dummy_int;
   r = dummy_float;
@@ -503,10 +535,7 @@ void PixelNtuplizer::vertex::init()
 
 void PixelNtuplizer::track::init()
 {
-  float dummy_float = 9999.0;
-  //int dummy_int = 9999;
-  //unsigned int dummy_uint = 9999;
-  //bool dummy_bool = false;
+  float dummy_float = -9999.0;
 
   eta = dummy_float;
   phi = dummy_float;
@@ -514,10 +543,8 @@ void PixelNtuplizer::track::init()
 
 void PixelNtuplizer::sim::init()
 {
-  float dummy_float = 9999.0;
-  int dummy_int = 9999;
-  //unsigned int dummy_uint = 9999;
-  //bool dummy_bool = false;
+  float dummy_float = -9999.0;
+  int dummy_int = -9999;
   
   x = dummy_float;
   y = dummy_float;
@@ -543,10 +570,9 @@ void PixelNtuplizer::sim::init()
 
 void PixelNtuplizer::clust::init()
 {
-  float dummy_float = 9999.0;
-  int dummy_int = 9999;
+  float dummy_float = -9999.0;
+  int dummy_int = -9999;
   unsigned int dummy_uint = 9999;
-  bool dummy_bool = false;
   
   charge = dummy_float; // convert ke to electrons
   size = dummy_int;
@@ -562,34 +588,35 @@ void PixelNtuplizer::clust::init()
   minPixelRow = dummy_int;
   
   geoId = dummy_uint;
-  edgeHitX = dummy_bool;
-  edgeHitY = dummy_bool;
+  edgeHitX = dummy_int;
+  edgeHitY = dummy_int;
+
+  clust_alpha = dummy_float;
+  clust_beta  = dummy_float; 
 }
 
 void PixelNtuplizer::pixinfo::init()
 {
-  //float dummy_float = 9999.0;
   npix = 0;
   /* for(int i = 0; i != maxpix; ++i)
      {
-      row[i] = dummy_float;
-      col[i] = dummy_float;
-      adc[i] = dummy_float;
-      x[i] = dummy_float;
-      y[i] = dummy_float;
-      gx[i] = dummy_float;
-      gy[i] = dummy_float;
-      gz[i] = dummy_float;
-   }*/
+     row[i] = dummy_float;
+     col[i] = dummy_float;
+     adc[i] = dummy_float;
+     x[i] = dummy_float;
+     y[i] = dummy_float;
+     gx[i] = dummy_float;
+     gy[i] = dummy_float;
+     gz[i] = dummy_float;
+     }
+  */
 } 
 
 void PixelNtuplizer::RecHit::init()
 {
-  float dummy_float = 9999.0;
-  //int dummy_int = 9999;
-  //unsigned int dummy_uint = 9999;
-  //bool dummy_bool = false;
-
+  float dummy_float = -9999.0;
+  int dummy_int = -9999;
+  
   x = dummy_float;
   y = dummy_float;
   xx = dummy_float;
@@ -600,4 +627,6 @@ void PixelNtuplizer::RecHit::init()
   gx = dummy_float;
   gy = dummy_float;
   gz = dummy_float;
+
+  nsimhit = dummy_int;
 }
