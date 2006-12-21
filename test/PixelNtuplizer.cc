@@ -389,8 +389,22 @@ PixelNtuplizer::fillClust(const SiPixelCluster & matchIt, const RectangularPixel
   clust_.minPixelRow = matchIt.minPixelRow();
   
   clust_.geoId = matchIt.geographicalId();
-  clust_.edgeHitX = matchIt.edgeHitX();
-  clust_.edgeHitY = matchIt.edgeHitY(); 
+
+  //clust_.edgeHitX = matchIt.edgeHitX();  // Old methods
+  //clust_.edgeHitY = matchIt.edgeHitY(); 
+  // Replace with the topology methods
+  int maxPixelCol = matchIt.maxPixelCol();
+  int maxPixelRow = matchIt.maxPixelRow();
+  int minPixelCol = matchIt.minPixelCol();
+  int minPixelRow = matchIt.minPixelRow();
+  // edge method moved to topologu class
+  bool edgeHitX = (topol->isItEdgePixelInX(minPixelRow)) ||
+    (topol->isItEdgePixelInX(maxPixelRow));
+  bool edgeHitY = (topol->isItEdgePixelInY(minPixelCol)) ||
+    (topol->isItEdgePixelInY(maxPixelCol));
+  clust_.edgeHitX = edgeHitX;
+  clust_.edgeHitY = edgeHitY; 
+
 }
 
 void
