@@ -42,18 +42,25 @@ class PixelNtuplizer : public edm::EDAnalyzer
   virtual void analyze(const edm::Event& e, const edm::EventSetup& es);
 
  protected:
-  void fillClust (const SiPixelCluster &, const RectangularPixelTopology *,const PixelGeomDetUnit *);
+  void fillClust (const SiPixelCluster& , const RectangularPixelTopology* , const PixelGeomDetUnit*);
   void fillRecHit(SiPixelRecHitCollection::const_iterator, const RectangularPixelTopology *,const PixelGeomDetUnit *);
   void fillDet(DetId &, int );
   void fillSim(std::vector<PSimHit>::const_iterator, unsigned int, const PixelGeomDetUnit *,
   	       const RectangularPixelTopology *); 
   void fillTrack(const edm::SimTrackContainer& trks);
-  void fillPix(const SiPixelCluster &, const RectangularPixelTopology *,const PixelGeomDetUnit *);
+  void fillPix(const SiPixelCluster &, const RectangularPixelTopology *, const PixelGeomDetUnit *);
   void fillEvt(const edm::Event& );
- 
+
  private:
   edm::ParameterSet conf_;
   edm::InputTag src_;
+
+  TFile* tfile_;
+  TTree* t_;
+  
+  bool checkType_; // do we check that the simHit associated with recHit is of the expected particle type ?
+  int genType_; // the type of particle that the simHit associated with recHits should be
+
   void init();
   
   //--- Structures for ntupling:
@@ -143,9 +150,10 @@ class PixelNtuplizer : public edm::EDAnalyzer
     int minPixelCol;
     int minPixelRow;
     unsigned int geoId;
-    bool edgeHitX;
-    bool edgeHitY;
-    
+    int edgeHitX;
+    int edgeHitY;    
+    float clust_alpha; // alpha from cluster position w.r.t detector center
+    float clust_beta;  // beta from cluster position w.r.t detector center
 
     void init();
   } clust_;
@@ -181,16 +189,10 @@ class PixelNtuplizer : public edm::EDAnalyzer
     float gy;
     float gz;
 
+    int nsimhit; // number of simhits associated with a rechit
+
     void init();
   } recHit_;
-
-  int nsimhit; // number of simhits associated with a rechit
-
-  TFile * tfile_;
-  TTree * t_;
-  
-  bool checkType_; // do we check that the simHit associated with recHit is of the expected particle type ?
-  int genType_; // the type of particle that the simHit associated with recHits should be
 
 };
 
