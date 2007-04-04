@@ -10,7 +10,7 @@
 
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
-#include "DataFormats/Common/interface/Handle.h"
+#include "FWCore/Framework/interface/Handle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/ParameterSet/interface/InputTag.h"
 
@@ -46,7 +46,7 @@ class PixelNtuplizer : public edm::EDAnalyzer
   void fillRecHit(SiPixelRecHitCollection::const_iterator, const RectangularPixelTopology *,const PixelGeomDetUnit *);
   void fillDet(DetId &, int );
   void fillSim(std::vector<PSimHit>::const_iterator, unsigned int, const PixelGeomDetUnit *,
-  	       const RectangularPixelTopology *, const edm::SimTrackContainer& ); 
+  	       const RectangularPixelTopology *); 
   void fillTrack(const edm::SimTrackContainer& trks);
   void fillPix(const SiPixelCluster &, const RectangularPixelTopology *, const PixelGeomDetUnit *);
   void fillEvt(const edm::Event& );
@@ -132,13 +132,6 @@ class PixelNtuplizer : public edm::EDAnalyzer
     float gy1, gy2;
     float gz1, gz2;
 
-    int proc; // ID of the process which created the track which created the PSimHit
-    float trk_eta; // wrong, don't use it !!!
-    float trk_phi; // wrong, don't use it !!!
-    float trk_eta2;
-    float trk_phi2; 
-
-
     void init();
   } sim_;
 
@@ -196,11 +189,7 @@ class PixelNtuplizer : public edm::EDAnalyzer
     float gy;
     float gz;
 
-    float probx;
-    float proby;
-    
     int nsimhit; // number of simhits associated with a rechit
-    int binq;
 
     void init();
   } recHit_;

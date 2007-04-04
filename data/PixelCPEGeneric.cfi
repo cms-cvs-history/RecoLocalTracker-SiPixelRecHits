@@ -1,6 +1,0 @@
-es_module = PixelCPEGenericESProducer {
-       string ComponentName = "PixelCPEGeneric"
-       double TanLorentzAnglePerTesla = 0.106
-       string PixelErrorParametrization = "NOTcmsim"  
-       bool   Alpha2Order = true
-}          
