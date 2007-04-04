@@ -42,7 +42,6 @@
 //#include "SimDataFormats/Track/interface/SimTrackContainer.h"
 #include "SimTracker/TrackerHitAssociation/interface/TrackerHitAssociator.h"
 
-#include "FWCore/Framework/interface/Handle.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 // For ROOT
@@ -104,7 +103,7 @@ void PixelNtuplizer::beginJob(const edm::EventSetup& es)
   t_->Branch("track", &track_, "eta/F:phi/F", bufsize);
   
   std::cout << "Making sim hit branch:" << std::endl;
-  t_->Branch("sim",   &sim_, "x/F:y/F:px/F:py/F:pz/F:eloss/F:phi/F:theta/F:subdetid/I:isflipped/I:alpha/F:beta/F:PID/I:TID/i:x1/F:x2:y1:y2:z1:z2:row1:row2:col1:col2:gx1:gx2:gy1:gy2:gz1:gz2", bufsize);
+  t_->Branch("sim",   &sim_, "x/F:y/F:px/F:py/F:pz/F:eloss/F:phi/F:theta/F:subdetid/I:isflipped/I:alpha/F:beta/F:PID/I:TID/i:x1/F:x2:y1:y2:z1:z2:row1:row2:col1:col2:gx1:gx2:gy1:gy2:gz1:gz2:proc/I:trk_eta/F:trk_phi/F:trk_eta2/F:trk_phi2/F", bufsize);
   
   std::cout << "Making cluster branch:" << std::endl;
   t_->Branch("clust", &clust_, "row/F:col/F:x/F:y/F:charge/F:size/I:size_x/I:size_y/I:maxPixelCol/I:maxPixelRow/I:minPixelCol/I:minPixelRow/I:geoId/i:edgeHitX/I:edgeHitY/I:clust_alpha/F:clust_beta/F", bufsize);
@@ -121,7 +120,7 @@ void PixelNtuplizer::beginJob(const edm::EventSetup& es)
   t_->Branch("gzpix", pixinfo_.gz, "gz[npix]/F", bufsize);
   
   std::cout << "Making recHit branch:" << std::endl;
-  t_->Branch("recHit", &recHit_, "x/F:y:xx:xy:yy:row:col:gx:gy:gz:nsimhit/I", bufsize);
+  t_->Branch("recHit", &recHit_, "x/F:y/F:xx/F:xy/F:yy/F:row/F:col/F:gx/F:gy/F:gz/F:probx/F:proby/F:nsimhit/I:binq/I", bufsize);
 
   std::cout << "Made all branches." << std::endl;
 }
@@ -238,12 +237,16 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
 	      const RectangularPixelTopology * topol = 
 		dynamic_cast<const RectangularPixelTopology*>(&(theGeomDet->specificTopology()));
 	      
-	      fillSim( closest_simhit, subid, theGeomDet, topol );
+	      fillSim( closest_simhit, subid, theGeomDet, topol, *(simtracks.product()) );
 	      
 	      fillTrack( *(simtracks.product()) );
 	
 	      fillRecHit(pixeliter, topol, theGeomDet);
-	      
+
+	      //cout << "recHit_.probx = " << recHit_.probx << endl;
+	      //cout << "recHit_.proby = " << recHit_.proby << endl;
+	      //cout << "recHit_.binq = " << recHit_.binq << endl;
+	      	      
 	      fillEvt(e);
 	      
 	      fillDet(detId, subid);
@@ -284,10 +287,19 @@ void PixelNtuplizer::fillRecHit(SiPixelRecHitCollection::const_iterator pixelite
   recHit_.gx = GP.x();
   recHit_.gy = GP.y();
   recHit_.gz = GP.z();
+  
+  //recHit_.probx = pixeliter->getProbX();
+  //recHit_.proby = pixeliter->getProbY();
+  //recHit_.binq  = pixeliter->getBinQ();
+
+  // cout << "recHit_.probx = " << recHit_.probx << endl;
+  //cout << "recHit_.proby = " << recHit_.proby << endl;
+  //cout << "recHit_.binq = " << recHit_.binq << endl;
+
 }
 
 void PixelNtuplizer::fillSim(std::vector<PSimHit>::const_iterator isim, unsigned int subid, const PixelGeomDetUnit * theGeomDet, 
-                             const RectangularPixelTopology * topol) 
+                             const RectangularPixelTopology * topol, const edm::SimTrackContainer& trks) 
 {
   sim_.x1 = (*isim).entryPoint().x(); // width (row index, in col direction)
   sim_.y1 = (*isim).entryPoint().y(); // length (col index, in row direction) 
@@ -338,6 +350,27 @@ void PixelNtuplizer::fillSim(std::vector<PSimHit>::const_iterator isim, unsigned
   //cout << " 1: " << tmp1 << " 2: " << tmp2 << endl;
   if ( tmp2<tmp1 ) sim_.isflipped = 1;
   else sim_.isflipped = 0;
+
+  sim_.proc = (int)isim->processType();
+
+
+  SimTrackContainer::const_iterator trksiter;
+  for (trksiter = trks.begin(); trksiter != trks.end(); trksiter++) 
+    {
+      if ( trksiter->trackId() == (sim_.TID - 1) ) 
+	{
+	  sim_.trk_eta = trksiter->momentum().eta();
+	  sim_.trk_phi = trksiter->momentum().phi();
+	}
+      if ( trksiter->trackId() == sim_.TID ) 
+	{
+	  sim_.trk_eta2 = trksiter->momentum().eta();
+	  sim_.trk_phi2 = trksiter->momentum().phi();
+	}
+      
+    }
+
+
 }
 
 void PixelNtuplizer::fillDet(DetId &tofill, int subdetid)
@@ -566,6 +599,13 @@ void PixelNtuplizer::sim::init()
   gy2 = dummy_float;
   gz1 = dummy_float;
   gz2 = dummy_float;
+  
+  proc = dummy_int;
+  trk_eta = dummy_float;
+  trk_phi = dummy_float;
+  trk_eta2 = dummy_float;
+  trk_phi2 = dummy_float;
+
 }
 
 void PixelNtuplizer::clust::init()
@@ -629,4 +669,8 @@ void PixelNtuplizer::RecHit::init()
   gz = dummy_float;
 
   nsimhit = dummy_int;
+
+  probx = dummy_float;
+  proby = dummy_float;
+  binq = dummy_int;
 }
