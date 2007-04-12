@@ -7,11 +7,11 @@
 <use name=boost>
 <use name=root>
 
-<flags SEAL_PLUGIN_NAME="ReadPixelRecHit">
+<flags EDM_PLUGIN=1>
 <library file=*.cc name=ReadPixelRecHit>
 </library>
 
-#<flags SEAL_PLUGIN_NAME="AnalyzePixRecHits">
+#<flags EDM_PLUGIN=1>
 #<library file=AnalyzePixRecHits.cc name=AnalyzePixRecHits>
 #</library>
 
