@@ -30,16 +30,13 @@
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
 
 #include "Geometry/TrackerTopology/interface/RectangularPixelTopology.h"
-#include "Geometry/TrackerGeometryBuilder/interface/PixelTopologyBuilder.h"
+#include "Geometry/TrackerGeometryBuilder/plugins/PixelTopologyBuilder.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 #include "Geometry/CommonDetUnit/interface/GeomDetType.h"
 #include "Geometry/CommonDetUnit/interface/GeomDetUnit.h"
 
 // SimDataFormats
-//#include "SimDataFormats/TrackingHit/interface/PSimHit.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
-//#include "SimDataFormats/Track/interface/SimTrack.h"
-//#include "SimDataFormats/Track/interface/SimTrackContainer.h"
 #include "SimTracker/TrackerHitAssociation/interface/TrackerHitAssociator.h"
 
 #include "FWCore/Framework/interface/ESHandle.h"
