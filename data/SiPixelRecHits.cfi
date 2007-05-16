@@ -1,6 +1,6 @@
 module siPixelRecHits = SiPixelRecHitConverter {
            InputTag src = siPixelClusters
-           untracked string ClusterCollLabel   = "siPixelClusters"
+           # untracked string ClusterCollLabel   = "siPixelClusters"
            string CPE                = "Initial"
            double TanLorentzAnglePerTesla = 0.106
            untracked int32  VerboseLevel       = 0
