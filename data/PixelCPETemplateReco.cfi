@@ -3,4 +3,6 @@ es_module = PixelCPETemplateRecoESProducer {
        double TanLorentzAnglePerTesla = 0.106
        string PixelErrorParametrization = "NOTcmsim"  
        bool   Alpha2Order = true
+
+		int32 speed = 0
 }          
