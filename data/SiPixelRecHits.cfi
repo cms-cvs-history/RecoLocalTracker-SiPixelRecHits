@@ -5,5 +5,7 @@ module siPixelRecHits = SiPixelRecHitConverter {
            double TanLorentzAnglePerTesla = 0.106
            untracked int32  VerboseLevel       = 0
            bool  Alpha2Order = true
+
+	int32 speed = 0
 }
 
