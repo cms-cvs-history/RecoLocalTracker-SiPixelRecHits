@@ -3,4 +3,13 @@ es_module = PixelCPEParmErrorESProducer {
        double TanLorentzAnglePerTesla = 0.106
        string PixelErrorParametrization = "NOTcmsim"  
        bool   Alpha2Order = true
+
+       # use new parameterization from CalibTracker/SiPixelErrorEstimation 
+       # errors are read in "PixelErrorParameterization.cc" from "data/residuals.dat"
+       bool UseNewParametrization = true
+      
+       # use Gaussian errors by default 
+       # if "UseSigma = false", then use RMS errors - not recommended 
+       bool UseSigma = true
+
 }          
