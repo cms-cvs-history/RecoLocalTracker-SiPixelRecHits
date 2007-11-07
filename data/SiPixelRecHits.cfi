@@ -6,6 +6,14 @@ module siPixelRecHits = SiPixelRecHitConverter {
            untracked int32  VerboseLevel       = 0
            bool  Alpha2Order = true
 
-	int32 speed = 0
+	   int32 speed = 0
+
+           # dfehling
+           untracked double eff_charge_cut_lowX = 0.0
+           untracked double eff_charge_cut_lowY = 0.0
+           untracked double eff_charge_cut_highX = 1.0
+           untracked double eff_charge_cut_highY = 1.0
+           untracked double size_cutX = 3.0
+           untracked double size_cutY = 3.0
 }
 
