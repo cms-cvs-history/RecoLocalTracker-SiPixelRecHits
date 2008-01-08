@@ -1,8 +1,8 @@
-es_module = PixelCPETemplateRecoESProducer {
+es_module templates = PixelCPETemplateRecoESProducer {
        string ComponentName = "PixelCPETemplateReco"
        double TanLorentzAnglePerTesla = 0.106
        string PixelErrorParametrization = "NOTcmsim"  
        bool   Alpha2Order = true
 
-		int32 speed = 0
+       int32 speed = 0
 }          
