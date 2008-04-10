@@ -248,7 +248,7 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
 	      
 	      fillDet(detId, subid);
 	      
-	      edm::Ref<edm::DetSetVector<SiPixelCluster>, SiPixelCluster> const& clust = pixeliter->cluster();
+	      edm::Ref<edmNew::DetSetVector<SiPixelCluster>, SiPixelCluster> const& clust = pixeliter->cluster();
 
 	      fillPix(*clust, topol, theGeomDet);
 	      
