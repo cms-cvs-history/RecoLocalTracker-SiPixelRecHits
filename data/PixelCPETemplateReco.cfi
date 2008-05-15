@@ -1,8 +1,11 @@
 es_module templates = PixelCPETemplateRecoESProducer {
        string ComponentName = "PixelCPETemplateReco"
+       
        double TanLorentzAnglePerTesla = 0.106
        string PixelErrorParametrization = "NOTcmsim"  
        bool   Alpha2Order = true
+
+       bool UseClusterSplitter = false	
 
        int32 speed = 0
 }          
