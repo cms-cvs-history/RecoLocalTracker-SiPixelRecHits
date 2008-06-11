@@ -5,6 +5,8 @@
 
 #include "RecoLocalTracker/SiPixelRecHits/interface/PixelCPEParmError.h"
 
+#include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
+
 // MessageLogger
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
@@ -93,6 +95,17 @@ PixelCPEParmError::localError( const SiPixelCluster& cluster, const GeomDetUnit 
       " Edgex = " << edgex          << " Edgey = " << edgey << 
       " ErrX = " << xerr            << " ErrY  = " << yerr;
   }
+
+  //Bug fix for outer pixel layers
+  DetId detid(det.geographicalId());
+  if (detid.subdetId()==1) {
+    PXBDetId pxbdetid(detid);
+    if(pxbdetid.layer()>3){
+      xerr = thePitchX / sqrt(12.);
+      yerr = thePitchY / sqrt(12.);
+    }
+  }
+
   return LocalError(xerr*xerr, 0,yerr*yerr);
 }
 
