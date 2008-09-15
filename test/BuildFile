@@ -3,6 +3,7 @@
 <use name=FWCore/ParameterSet>
 <use name=SimTracker/TrackerHitAssociation>
 <use name=RecoLocalTracker/SiPixelRecHits>
+<use name=Alignment/OfflineValidation>
 
 # to use root histos inside the analyzer
 <use name=PhysicsTools/UtilAlgos>
@@ -12,11 +13,10 @@
 <use name=boost>
 <use name=root>
 
-
-
-
 <flags EDM_PLUGIN=1>
-<library file=*.cc name=ReadPixelRecHit>
+<library file=PixelNtuplizer.cc name=ReadPixelRecHit>
+</library>
+<library file=PixelNtuplizer_RealData.cc name=PixelNtuplizer_RealData>
 </library>
 
 #<flags EDM_PLUGIN=1>
