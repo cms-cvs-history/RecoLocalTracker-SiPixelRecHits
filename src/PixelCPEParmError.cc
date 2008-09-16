@@ -5,6 +5,9 @@
 
 #include "RecoLocalTracker/SiPixelRecHits/interface/PixelCPEParmError.h"
 
+#include "DataFormats/DetId/interface/DetId.h"
+#include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
+
 // MessageLogger
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
@@ -93,6 +96,13 @@ PixelCPEParmError::localError( const SiPixelCluster& cluster, const GeomDetUnit 
       " Edgex = " << edgex          << " Edgey = " << edgey << 
       " ErrX = " << xerr            << " ErrY  = " << yerr;
   }
+  
+      // workaround to correct the strixel y error (in the present parametrization it is too
+      // small)
+      uint32_t ilay = PXBDetId(theDet->geographicalId()).layer();
+//      std::cout << " PixelCPEParmError: layer =" << ilay <<" pitchy = "<<thePitchY<<std::endl;
+      if (ilay>=5)yerr = thePitchY / sqrt(12.); //to be adjusted for the chosen strixel size
+
   return LocalError(xerr*xerr, 0,yerr*yerr);
 }
 
