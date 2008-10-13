@@ -73,25 +73,23 @@ class PixelNtuplizer_RD : public edm::EDAnalyzer
   virtual void analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup);
 
  protected:
-  void fillEvt(const edm::Event&);
+  void fillTrackOnly(const edm::Event&, bool, int);
+  void fillEvt(const edm::Event&,int NbrTracks);
   void fillDet(const DetId &, uint, const PixelGeomDetUnit*);
   void fillVertex(const PixelGeomDetUnit*);
   void fillClust(const SiPixelCluster&, const RectangularPixelTopology*, const PixelGeomDetUnit*);
   void fillPix(const SiPixelCluster&, const RectangularPixelTopology*, const PixelGeomDetUnit*);
-  void fillTrack(TrajectoryStateOnSurface&);
+  void fillTrack(TrajectoryStateOnSurface&,const Trajectory &it, int);
   
  private:
   edm::ParameterSet conf_;
   edm::ESHandle<TrackerGeometry> tkGeom_;
   edm::ESHandle<MagneticField> magneticField_;
 
-  int TrackCounter;
-  int PixelTrackCounter;
-
   TFile* tfile_;
   TTree* t_;  // tree filled on every pixel rec hit
   TTree* ts_; // tree filled on every strip rec hit
-  TTree* tc_; // tree filled every job (eventually every event)
+  TTree* tt_; // tree filled every track
   
   void init();
   
@@ -101,6 +99,7 @@ class PixelNtuplizer_RD : public edm::EDAnalyzer
 
     int run;
     int evtnum;
+    int nbrTracks;
 
     void init();
   } evt_;
@@ -195,11 +194,10 @@ class PixelNtuplizer_RD : public edm::EDAnalyzer
     float globalPhi;
     float localEta;
     float localPhi;
-    /*    float kappa;
     float chi2;
-    float normchi2;
-    float d0;
-    float dz; */
+    float ndof;
+    int foundHits;
+    int tracknum;     // number of track processed (correlates with others)
 
     void init();
     } track_;
@@ -209,17 +207,22 @@ class PixelNtuplizer_RD : public edm::EDAnalyzer
     float globalX;
     float globalY;
     float globalZ;
+    int run;
+    int evtnum;
+    int tracknum;     // number of track processed (correlates with others)
 
     void init();
     } trackerhits_;
 
-  struct CounterStruct{
+  struct TrackOnlyStruct{
 
-    int trackCounter;
-    int pixelTrackCounter;
+    int run;
+    int evtnum;
+    int tracknum;     // number of track processed (correlates with others)
+    int pixelTrack;   // 0 = no, 1 = yes
 
     void init();
-    } counters_;
+    } trackonly_;
 
 };
 

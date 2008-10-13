@@ -14,7 +14,9 @@
 #include "DQM/SiStripCommon/interface/SiStripHistoId.h"
 #include "DQM/TrackerMonitorTrack/interface/MonitorTrackResiduals.h"
 #include "Geometry/CommonTopologies/interface/StripTopology.h"
+
 #include "RecoTracker/TransientTrackingRecHit/interface/TkTransientTrackingRecHitBuilder.h"
+
 #include "TrackingTools/PatternTools/interface/TrajectoryFitter.h"
 #include "TrackingTools/TrajectoryState/interface/TrajectoryStateOnSurface.h"
 #include "DataFormats/GeometryCommonDetAlgo/interface/MeasurementVector.h"
@@ -25,7 +27,9 @@
 #include "DataFormats/SiStripDetId/interface/TIDDetId.h"
 #include "DataFormats/SiStripDetId/interface/TOBDetId.h"
 #include "TrackingTools/TrackFitters/interface/TrajectoryStateCombiner.h"
+
 #include "DataFormats/TrackReco/interface/Track.h"
+
 #include "DataFormats/Math/interface/deltaPhi.h"
 #include "DataFormats/GeometryCommonDetAlgo/interface/MeasurementVector.h"
 #include "DataFormats/SiStripDetId/interface/SiStripDetId.h"
@@ -111,11 +115,7 @@ PixelNtuplizer_RD::~PixelNtuplizer_RD() { }
 // End job: write and close the ntuple file
 void PixelNtuplizer_RD::endJob() 
 {
-  counters_.trackCounter = TrackCounter;
-  counters_.pixelTrackCounter = PixelTrackCounter;
-  //++++++++++
-  tc_->Fill();
-  //++++++++++
+
   std::string outputFileName = conf_.getParameter<std::string>("OutputFile");
   std::cout << " PixelNtuplizer_RealData::endJob" << std::endl;
   tfile_->Write();
@@ -135,12 +135,12 @@ void PixelNtuplizer_RD::beginJob(const edm::EventSetup& es)
 
   t_ = new TTree("PixNtuple", "Pixel hit analyzer ntuple");
   ts_ = new TTree("StripNtuple", "Strip hit analyzer ntuple");
-  tc_ = new TTree("CounterNtuple", "Counters filled every event");
+  tt_ = new TTree("TrackNtuple", "Counters filled every track");
   int bufsize = 64000;
 
   // Create one branch. If splitlevel is set, event is a superbranch
   // creating a sub branch for each data member of the Event object.
-  t_->Branch("evt", &evt_, "run/I:evtnum", bufsize);
+  t_->Branch("evt", &evt_, "run/I:evtnum:nbrTracks", bufsize);
   
   t_->Branch("det", &det_, "thickness/F:cols/I:rows/I:layer/I:ladder/I:module/I:disk/I:blade/I:panel/I:plaquette/I", bufsize);
 
@@ -165,17 +165,15 @@ void PixelNtuplizer_RD::beginJob(const edm::EventSetup& es)
   t_->Branch("RecHit", &rechit_, "localX/F:localY:globalX:globalY:globalZ:residualX:residualY:resErrX:resErrY:resXprime:resXprimeErr", bufsize);
 
   std::cout << "Making track branch:" << std::endl;
-  t_->Branch("track", &track_, "pt/F:px:py:pz:globalEta:globalPhi:localEta:localPhi", bufsize);
+  t_->Branch("track", &track_, "pt/F:px:py:pz:globalEta:globalPhi:localEta:localPhi:chi2:ndof:foundHits/I:tracknum", bufsize);
 
   std::cout << "Making tracker hit branch:" << std::endl;
-  ts_->Branch("TrackerHit", &trackerhits_, "globalX/F:globalY:globalZ", bufsize);
+  ts_->Branch("TrackerHit", &trackerhits_, "globalX/F:globalY:globalZ:run/I:evtnum:tracknum", bufsize);
 
-  std::cout << "Making counter branch:" << std::endl;
-  tc_->Branch("Counters", &counters_, "trackCounter/I:pixelTrackCounter", bufsize);
+  std::cout << "Making track only branch:" << std::endl;
+  tt_->Branch("TrackInfo", &trackonly_, "run/I:evtnum:tracknum:pixelTrack", bufsize);
   
   std::cout << "Made all branches." << std::endl;
-  TrackCounter = 0;
-  PixelTrackCounter = 0;
 
 }
 
@@ -183,19 +181,24 @@ void PixelNtuplizer_RD::beginJob(const edm::EventSetup& es)
 // Functions that get called by framework every event
 void PixelNtuplizer_RD::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-  counters_.init();
+  //std::cout << " here " << endl;
+  int TrackNumber = 0;
+
+  trackonly_.init();
+
   edm::Handle<std::vector<Trajectory> > trajCollectionHandle;
   iEvent.getByLabel(conf_.getParameter<std::string>("trajectoryInput"),trajCollectionHandle);
-  
+
   TrajectoryStateCombiner tsoscomb;
-  edm::LogVerbatim("TrackerValidationVariables") << "trajColl->size(): " << trajCollectionHandle->size() ;
+  int NbrTracks =  trajCollectionHandle->size() ;
   for(std::vector<Trajectory>::const_iterator it = trajCollectionHandle->begin(), itEnd = trajCollectionHandle->end(); 
       it!=itEnd;++it){
 
-    TrackCounter++;
+    TrackNumber++;
     bool trajContainsPixelHit = false;
 
     std::vector<TrajectoryMeasurement> checkColl = it->measurements();
+    // cout << " impact point " << it->impactPointTCSP()->position()->z() << endl;
     for(std::vector<TrajectoryMeasurement>::const_iterator checkTraj = checkColl.begin(), checkTrajEnd = checkColl.end(); 
 	checkTraj != checkTrajEnd; ++checkTraj) {
 
@@ -207,17 +210,19 @@ void PixelNtuplizer_RD::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	trajContainsPixelHit = true;
     }
 
-    if (!trajContainsPixelHit) continue;
+    fillTrackOnly(iEvent, trajContainsPixelHit, TrackNumber);
+    //++++++++++
+    tt_->Fill();
+    //++++++++++
 
-    PixelTrackCounter++;
+    if (!trajContainsPixelHit) continue;
 
     std::vector<TrajectoryMeasurement> tmColl = it->measurements();
     for(std::vector<TrajectoryMeasurement>::const_iterator itTraj = tmColl.begin(), itTrajEnd = tmColl.end(); 
 	itTraj != itTrajEnd; ++itTraj) {
 
       if(! itTraj->updatedState().isValid()) continue;
-      
-      
+
       TrajectoryStateOnSurface tsos = tsoscomb( itTraj->forwardPredictedState(), itTraj->backwardPredictedState() );
       TransientTrackingRecHit::ConstRecHitPointer hit = itTraj->recHit();
       if(! hit->isValid() || hit->geographicalId().det() != DetId::Tracker ) {
@@ -238,8 +243,8 @@ void PixelNtuplizer_RD::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	float errX = std::sqrt( err1.xx() + err2.xx() );
 	float errY = std::sqrt( err1.yy() + err2.yy() );
 	
-	LogDebug("PixelNtuplizer_RealData") << "Residual x/y " << res.x() << '/' << res.y() 
-					       << ", Error x/y " << errX << '/' << errY;		
+	//std::cout << "Residual x/y " << res.x() << '/' << res.y() 
+	//  << ", Error x/y " << errX << '/' << errY;		
 
 	// begin partly copied from Tifanalyser 
 
@@ -247,7 +252,6 @@ void PixelNtuplizer_RD::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	double dPhi = -999, dR = -999, dZ = -999, phiorientation = -999;
 	double R = 0.;
 	double origintointersect = 0.;	
-
 
 	if(detUnit) {
 	  const Surface& surface = hit->detUnit()->surface();
@@ -295,12 +299,12 @@ void PixelNtuplizer_RD::analyze(const edm::Event& iEvent, const edm::EventSetup&
 		else rechit_.residualY = res.y();
 
                 // get the contents
-                fillEvt(iEvent);
+                fillEvt(iEvent,NbrTracks);
                 fillDet(hit_detId, IntSubDetID, theGeomDet);
 		fillVertex(theGeomDet);
                 fillClust(*clust, topol, theGeomDet);
                 fillPix(*clust, topol, theGeomDet);
-                fillTrack( tsos );
+                fillTrack( tsos, *it, TrackNumber);
                 //fillRecHit(pixeliter, topol, theGeomDet);
 
       	        //++++++++++
@@ -312,49 +316,36 @@ void PixelNtuplizer_RD::analyze(const edm::Event& iEvent, const edm::EventSetup&
 
 	  } else if (IntSubDetID == StripSubdetector::TIB || IntSubDetID == StripSubdetector::TOB ||
 		     IntSubDetID == StripSubdetector::TID || IntSubDetID == StripSubdetector::TEC) {
-	    /*	    const RadialStripTopology* theTopol = dynamic_cast<const RadialStripTopology*>(&(detUnit->topology()));
-	    origintointersect =  static_cast<float>(theTopol->originToIntersection());
-	    	    
-	    MeasurementPoint theMeasHitPos = theTopol->measurementPosition(hit->localPosition());
-	    MeasurementPoint theMeasStatePos = theTopol->measurementPosition(tsos.localPosition());
-	    Measurement2DVector residual =  theMeasStatePos - theMeasHitPos;
-	    
-	    MeasurementError theMeasHitErr = theTopol->measurementError(hit->localPosition(),err2);
-	    MeasurementError theMeasStateErr = theTopol->measurementError(tsos.localPosition(),err1);
 
-	    double localPitch = theTopol->localPitch(hit->localPosition());
-	    float xPrime = residual.x()*localPitch ;
-	    float measErr = std::sqrt( theMeasHitErr.uu()+theMeasStateErr.uu())*localPitch;
-
-	    R = origintointersect;
-	    dR = theTopol->yDistanceToIntersection( tsos.localPosition().y()) - 
-	      theTopol->yDistanceToIntersection( hit->localPosition().y());
-	    */
-	    trackerhits_.init();
-	    trackerhits_.globalX = hit->globalPosition().x();
-	    trackerhits_.globalY = hit->globalPosition().y();
-	    trackerhits_.globalZ = hit->globalPosition().z();
-
+	    //fillTrackerHits(iEvent,hit);
 	    //++++++++++
 	    ts_->Fill();
 	    //++++++++++
 
 	  } else {
-	    edm::LogWarning("PixelNtuplizer_RealData") << "@SUB=PixelNtuplizer_RealData::fillHitQuantities" 
-							  << "No valid tracker subdetector " << IntSubDetID;
+	    //std::cout << "@SUB=PixelNtuplizer_RealData::fillHitQuantities" 
+	    //  << "No valid tracker subdetector " << IntSubDetID;
 	    rechit_.resXprime = -999;
 	  }  // if-else to differentiate pixel hits vs tracker hits	  
 	}  // end if(good detUnit)
       }  // end else (if-else to screen out invalid hits)
     }  // end loop over trajectory measurements (rec hits) 
   }  // end loop over trajectories
-}  // end analyze function
+ }  // end analyze function
 
+void PixelNtuplizer_RD::fillTrackOnly(const edm::Event& E, bool trajContainsPixelHit, int TrackNumber)
+{
+  if(trajContainsPixelHit) trackonly_.pixelTrack = 1;
+  trackonly_.tracknum = TrackNumber;
+  trackonly_.run = E.id().run();
+  trackonly_.evtnum = E.id().event();
+}
 
-void PixelNtuplizer_RD::fillEvt(const edm::Event& E)
+void PixelNtuplizer_RD::fillEvt(const edm::Event& E,int NbrTracks)
 {
   evt_.run = E.id().run();
   evt_.evtnum = E.id().event();
+  evt_.nbrTracks = NbrTracks;
 }
 
 void PixelNtuplizer_RD::fillDet(const DetId &tofill, uint subdetid, const PixelGeomDetUnit* PixGeom)
@@ -484,7 +475,7 @@ void PixelNtuplizer_RD::fillPix(const SiPixelCluster & LocPix, const Rectangular
     }
 }
 
-void PixelNtuplizer_RD::fillTrack(TrajectoryStateOnSurface& tsos) 
+void PixelNtuplizer_RD::fillTrack(TrajectoryStateOnSurface& tsos,const Trajectory &it, int TrackNumber) 
 {
   track_.pt = tsos.globalMomentum().transverse();
   track_.px = tsos.globalMomentum().x();
@@ -494,6 +485,12 @@ void PixelNtuplizer_RD::fillTrack(TrajectoryStateOnSurface& tsos)
   track_.globalEta = tsos.globalDirection().eta();
   track_.localPhi = tsos.localDirection().phi();
   track_.localEta = tsos.localDirection().eta();
+  track_.chi2 = it.chiSquared();
+  track_.ndof = it.ndof();
+  track_.foundHits = it.foundHits();
+  track_.tracknum = TrackNumber;
+
+  // std::cout << " chi2 " << it->chiSquared()<< " ndof " << it->ndof() << endl;
 }
 
 
@@ -603,6 +600,7 @@ void PixelNtuplizer_RD::RecHitStruct::init()
 void PixelNtuplizer_RD::TrackStruct::init()
 {
   float dummy_float = -9999.0;
+  int dummy_int = -9999;
 
   pt = dummy_float; 
   px = dummy_float;
@@ -612,6 +610,9 @@ void PixelNtuplizer_RD::TrackStruct::init()
   globalPhi = dummy_float;
   localEta = dummy_float;
   localPhi = dummy_float;
+  chi2 = dummy_float;
+  ndof = dummy_int;
+  tracknum = dummy_int;
 }
 
 void PixelNtuplizer_RD::TrackerHitStruct::init()
@@ -623,10 +624,14 @@ void PixelNtuplizer_RD::TrackerHitStruct::init()
   globalZ = dummy_float;
 }
 
-void PixelNtuplizer_RD::CounterStruct::init()
+void PixelNtuplizer_RD::TrackOnlyStruct::init()
 {
-  trackCounter = 0;
-  pixelTrackCounter = 0;
+  int dummy_int = -9999;
+
+  run = dummy_int;
+  evtnum = dummy_int;
+  tracknum = dummy_int;
+  pixelTrack = 0;
 }
 
 // define this as a plug-in
