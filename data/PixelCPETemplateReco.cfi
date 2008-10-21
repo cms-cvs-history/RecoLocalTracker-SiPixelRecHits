@@ -8,4 +8,5 @@ es_module templates = PixelCPETemplateRecoESProducer {
        bool UseClusterSplitter = false	
 
        int32 speed = 0
+       untracked int32 ClusterProbComputationFlag = 0
 }          
