@@ -43,7 +43,7 @@ class PixelNtuplizer : public edm::EDAnalyzer
 
  protected:
   void fillClust (const SiPixelCluster& , const RectangularPixelTopology* , const PixelGeomDetUnit*);
-  void fillRecHit(SiPixelRecHitCollection::const_iterator, const RectangularPixelTopology *,const PixelGeomDetUnit *);
+  void fillRecHit(SiPixelRecHitCollection::DetSet::const_iterator, const RectangularPixelTopology *,const PixelGeomDetUnit *);
   void fillDet(DetId &, int );
   void fillSim(std::vector<PSimHit>::const_iterator, unsigned int, const PixelGeomDetUnit *,
   	       const RectangularPixelTopology *, const edm::SimTrackContainer& ); 
