@@ -164,10 +164,10 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
       if ( !((subid==1) || (subid==2)) ) 
 	continue; // end subid if
       
-      SiPixelRecHitCollection::range pixelrechitRange = (recHitColl.product())->get(detId);
-      SiPixelRecHitCollection::const_iterator pixelrechitRangeIteratorBegin = pixelrechitRange.first;
-      SiPixelRecHitCollection::const_iterator pixelrechitRangeIteratorEnd = pixelrechitRange.second;
-      SiPixelRecHitCollection::const_iterator pixeliter = pixelrechitRangeIteratorBegin;
+      SiPixelRecHitCollection::const_iterator pixelrechitRange = recHitColl->find(detId);
+      if (pixelrechitRange == recHitColl->end()) continue;
+      SiPixelRecHitCollection::DetSet::const_iterator pixeliter = pixelrechitRange->begin();
+      SiPixelRecHitCollection::DetSet::const_iterator pixelrechitRangeIteratorEnd = pixelrechitRange->end();
       std::vector<PSimHit> matched;
       
       //----Loop over rechits for this detId
@@ -266,7 +266,7 @@ void PixelNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es)
   
 } // end analyze function
 
-void PixelNtuplizer::fillRecHit(SiPixelRecHitCollection::const_iterator pixeliter,
+void PixelNtuplizer::fillRecHit(SiPixelRecHitCollection::DetSet::const_iterator pixeliter,
 				const RectangularPixelTopology * topol, const PixelGeomDetUnit * PixGeom) 
 {
   LocalPoint lp = pixeliter->localPosition();
