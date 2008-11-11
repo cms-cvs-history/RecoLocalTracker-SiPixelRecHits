@@ -4,96 +4,24 @@
 // Authors: Andrew York, Tennessee
 //
 //
-#include "FWCore/Framework/interface/ESHandle.h"
-#include "FWCore/Framework/interface/Event.h"
-#include "FWCore/ServiceRegistry/interface/Service.h"
-#include "CalibTracker/Records/interface/SiStripDetCablingRcd.h"
-#include "CalibFormats/SiStripObjects/interface/SiStripDetCabling.h"
-#include "DataFormats/SiStripDetId/interface/SiStripSubStructure.h"
-#include "DQM/SiStripCommon/interface/SiStripFolderOrganizer.h"
-#include "DQM/SiStripCommon/interface/SiStripHistoId.h"
-#include "DQM/TrackerMonitorTrack/interface/MonitorTrackResiduals.h"
-#include "Geometry/CommonTopologies/interface/StripTopology.h"
-
-#include "RecoTracker/TransientTrackingRecHit/interface/TkTransientTrackingRecHitBuilder.h"
-
-#include "TrackingTools/PatternTools/interface/TrajectoryFitter.h"
-#include "TrackingTools/TrajectoryState/interface/TrajectoryStateOnSurface.h"
-#include "DataFormats/GeometryCommonDetAlgo/interface/MeasurementVector.h"
-#include "DataFormats/SiStripDetId/interface/StripSubdetector.h"
-#include "DataFormats/SiStripDetId/interface/SiStripDetId.h"
-#include "DataFormats/SiStripDetId/interface/TECDetId.h"
-#include "DataFormats/SiStripDetId/interface/TIBDetId.h"
-#include "DataFormats/SiStripDetId/interface/TIDDetId.h"
-#include "DataFormats/SiStripDetId/interface/TOBDetId.h"
-#include "TrackingTools/TrackFitters/interface/TrajectoryStateCombiner.h"
-
-#include "DataFormats/TrackReco/interface/Track.h"
-
 #include "DataFormats/Math/interface/deltaPhi.h"
-#include "DataFormats/GeometryCommonDetAlgo/interface/MeasurementVector.h"
-#include "DataFormats/SiStripDetId/interface/SiStripDetId.h"
+#include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
+#include "DataFormats/SiPixelDetId/interface/PXFDetId.h"
+#include "DataFormats/TrackReco/interface/Track.h"
+#include "DQM/SiStripCommon/interface/SiStripFolderOrganizer.h"
 #include "TrackingTools/PatternTools/interface/Trajectory.h"
-#include "TrackingTools/PatternTools/interface/TrajectoryMeasurement.h"
-#include "TrackingTools/TrackFitters/interface/TrajectoryStateCombiner.h"
-#include "TrackingTools/TransientTrackingRecHit/interface/TransientTrackingRecHitBuilder.h"
-#include "TrackingTools/TrajectoryState/interface/TrajectoryStateOnSurface.h"
 #include "TrackingTools/TrajectoryState/interface/TrajectoryStateTransform.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
-#include "TrackingTools/Records/interface/TransientRecHitRecord.h"
-#include "TrackingTools/GeomPropagators/interface/AnalyticalPropagator.h"
-
-#include "MagneticField/Engine/interface/MagneticField.h"
-#include "CalibFormats/SiStripObjects/interface/SiStripDetCabling.h"
-#include "CalibTracker/Records/interface/SiStripDetCablingRcd.h"
-#include "Geometry/TrackerGeometryBuilder/interface/StripGeomDetUnit.h"
-#include "Geometry/CommonTopologies/interface/RadialStripTopology.h"
-#include "Geometry/CommonTopologies/interface/RectangularStripTopology.h"
-#include "Geometry/CommonTopologies/interface/StripTopology.h"
-#include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"  
-#include "Alignment/TrackerAlignment/interface/TrackerAlignableId.h"
-#include "Alignment/OfflineValidation/interface/TrackerValidationVariables.h"
-
-//----------------------------------------------------------------------
-
+#include "TrackingTools/PatternTools/interface/TrajTrackAssociation.h"
 #include "RecoLocalTracker/SiPixelRecHits/test/PixelNtuplizer_RealData.h"
-
-// DataFormats
-#include "DataFormats/Math/interface/deltaPhi.h"
-#include "DataFormats/TrackerRecHit2D/interface/SiPixelRecHitCollection.h"
-#include "DataFormats/DetId/interface/DetId.h"
-#include "DataFormats/SiPixelDetId/interface/PXBDetId.h" 
-#include "DataFormats/SiPixelDetId/interface/PXFDetId.h" 
-#include "DataFormats/SiPixelDetId/interface/PixelSubdetector.h"
-#include "DataFormats/Common/interface/DetSetVector.h"
-#include "DataFormats/SiPixelCluster/interface/SiPixelCluster.h"
-#include "DataFormats/Common/interface/Ref.h"
-
-// Old
-#include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
 #include "Geometry/TrackerTopology/interface/RectangularPixelTopology.h"
-#include "Geometry/TrackerGeometryBuilder/interface/PixelTopologyBuilder.h"
-#include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
-#include "Geometry/CommonDetUnit/interface/GeomDetType.h"
-#include "Geometry/CommonDetUnit/interface/GeomDetUnit.h"
-#include "DQM/SiPixelCommon/interface/SiPixelFolderOrganizer.h"
-#include "DQM/SiPixelMonitorTrack/interface/SiPixelMonitorTrackResiduals.h"
-#include "DQMServices/Core/interface/DQMStore.h"
-#include "Alignment/OfflineValidation/interface/TrackerValidationVariables.h"
 
-// SimDataFormats
-#include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
-#include "SimTracker/TrackerHitAssociation/interface/TrackerHitAssociator.h"
-#include "FWCore/Framework/interface/ESHandle.h"
-#include "FWCore/Framework/interface/EventSetup.h"
 // For ROOT
 #include <TROOT.h>
-// #include <TChain.h>
 #include <TTree.h>
 #include <TFile.h>
-#include <TF1.h>
-#include <TH2F.h>
 #include <TH1F.h>
+#include <TH2F.h>
 
 // STD
 #include <memory>
@@ -102,6 +30,7 @@
 
 using namespace std;
 using namespace edm;
+using namespace reco;
 
 PixelNtuplizer_RD::PixelNtuplizer_RD(edm::ParameterSet const& ps) : 
   conf_(ps),
@@ -134,7 +63,7 @@ void PixelNtuplizer_RD::beginJob(const edm::EventSetup& es)
   tfile_ = new TFile ( outputFile.c_str() , "RECREATE" );
 
   t_ = new TTree("PixNtuple", "Pixel hit analyzer ntuple");
-  ts_ = new TTree("StripNtuple", "Strip hit analyzer ntuple");
+  //  ts_ = new TTree("StripNtuple", "Strip hit analyzer ntuple");
   tt_ = new TTree("TrackNtuple", "Counters filled every track");
   int bufsize = 64000;
 
@@ -148,7 +77,7 @@ void PixelNtuplizer_RD::beginJob(const edm::EventSetup& es)
   t_->Branch("vertex",   &vertex_,   "r/F:z", bufsize);
 
   std::cout << "Making cluster branch:" << std::endl;
-  t_->Branch("Cluster", &clust_, "row/F:col:x:y:charge:size/I:size_x:size_y:maxPixelCol:maxPixelRow:minPixelCol:minPixelRow:geoId/i:edgeHitX/I:edgeHitY:clust_alpha/F:clust_beta", bufsize);
+  t_->Branch("Cluster", &clust_, "row/F:col:x:y:charge:normalized_charge:size/I:size_x:size_y:maxPixelCol:maxPixelRow:minPixelCol:minPixelRow:geoId/i:edgeHitX/I:edgeHitY:clust_alpha/F:clust_beta", bufsize);
   
   std::cout << "Making pixinfo branch:" << std::endl;
   t_->Branch("npix", &pixinfo_.npix, "npix/I", bufsize);
@@ -165,13 +94,13 @@ void PixelNtuplizer_RD::beginJob(const edm::EventSetup& es)
   t_->Branch("RecHit", &rechit_, "localX/F:localY:globalX:globalY:globalZ:residualX:residualY:resErrX:resErrY:resXprime:resXprimeErr", bufsize);
 
   std::cout << "Making track branch:" << std::endl;
-  t_->Branch("track", &track_, "pt/F:px:py:pz:globalEta:globalPhi:localEta:localPhi:chi2:ndof:foundHits/I:tracknum", bufsize);
+  t_->Branch("track", &track_, "pt/F:p:px:py:pz:globalTheta:globalEta:globalPhi:localTheta:localPhi:chi2:ndof:foundHits/I:tracknum", bufsize);
 
-  std::cout << "Making tracker hit branch:" << std::endl;
-  ts_->Branch("TrackerHit", &trackerhits_, "globalX/F:globalY:globalZ:run/I:evtnum:tracknum", bufsize);
+  //  std::cout << "Making tracker hit branch:" << std::endl;
+  //  ts_->Branch("TrackerHit", &trackerhits_, "globalX/F:globalY:globalZ:run/I:evtnum:tracknum", bufsize);
 
   std::cout << "Making track only branch:" << std::endl;
-  tt_->Branch("TrackInfo", &trackonly_, "run/I:evtnum:tracknum:pixelTrack", bufsize);
+  tt_->Branch("TrackInfo", &trackonly_, "run/I:evtnum:tracknum:pixelTrack:NumPixelHits:NumStripHits:charge:chi2/F:ndof:theta:d0:dz:p:pt:px:py:pz:phi:eta:vx:vy:vz", bufsize);
   
   std::cout << "Made all branches." << std::endl;
 
@@ -186,39 +115,43 @@ void PixelNtuplizer_RD::analyze(const edm::Event& iEvent, const edm::EventSetup&
 
   trackonly_.init();
 
-  edm::Handle<std::vector<Trajectory> > trajCollectionHandle;
-  iEvent.getByLabel(conf_.getParameter<std::string>("trajectoryInput"),trajCollectionHandle);
+  edm::Handle<TrajTrackAssociationCollection> trajTrackCollectionHandle;
+  //edm::Handle<std::vector<Trajectory> > trajCollectionHandle;
+  iEvent.getByLabel(conf_.getParameter<std::string>("trajectoryInput"),trajTrackCollectionHandle);
 
   TrajectoryStateCombiner tsoscomb;
-  int NbrTracks =  trajCollectionHandle->size() ;
-  for(std::vector<Trajectory>::const_iterator it = trajCollectionHandle->begin(), itEnd = trajCollectionHandle->end(); 
-      it!=itEnd;++it){
+  int NbrTracks =  trajTrackCollectionHandle->size();
+  for(TrajTrackAssociationCollection::const_iterator it = trajTrackCollectionHandle->begin(), itEnd = trajTrackCollectionHandle->end(); it!=itEnd;++it){
 
     TrackNumber++;
-    bool trajContainsPixelHit = false;
-
-    std::vector<TrajectoryMeasurement> checkColl = it->measurements();
-    // cout << " impact point " << it->impactPointTCSP()->position()->z() << endl;
-    for(std::vector<TrajectoryMeasurement>::const_iterator checkTraj = checkColl.begin(), checkTrajEnd = checkColl.end(); 
+    int pixelHits = 0;
+    int stripHits = 0;
+    const Track&      track = *it->val;
+    const Trajectory& traj  = *it->key;
+    
+    std::vector<TrajectoryMeasurement> checkColl = traj.measurements();
+    for(std::vector<TrajectoryMeasurement>::const_iterator checkTraj = checkColl.begin(), checkTrajEnd = checkColl.end();
 	checkTraj != checkTrajEnd; ++checkTraj) {
 
       if(! checkTraj->updatedState().isValid()) continue;
       TransientTrackingRecHit::ConstRecHitPointer testhit = checkTraj->recHit();
       if(! testhit->isValid() || testhit->geographicalId().det() != DetId::Tracker ) continue;
       uint testSubDetID = (testhit->geographicalId().subdetId());
-      if(testSubDetID == PixelSubdetector::PixelBarrel || testSubDetID == PixelSubdetector::PixelEndcap) 
-	trajContainsPixelHit = true;
+      if(testSubDetID == PixelSubdetector::PixelBarrel || testSubDetID == PixelSubdetector::PixelEndcap) pixelHits++;
+      else if (testSubDetID == StripSubdetector::TIB || testSubDetID == StripSubdetector::TOB ||
+	       testSubDetID == StripSubdetector::TID || testSubDetID == StripSubdetector::TEC) stripHits++;
+
     }
 
-    fillTrackOnly(iEvent, trajContainsPixelHit, TrackNumber);
+    fillTrackOnly(iEvent, pixelHits, stripHits, TrackNumber, track);
     //++++++++++
     tt_->Fill();
     //++++++++++
 
-    if (!trajContainsPixelHit) continue;
+    if (pixelHits == 0) continue;
 
-    std::vector<TrajectoryMeasurement> tmColl = it->measurements();
-    for(std::vector<TrajectoryMeasurement>::const_iterator itTraj = tmColl.begin(), itTrajEnd = tmColl.end(); 
+    std::vector<TrajectoryMeasurement> tmColl = traj.measurements();
+    for(std::vector<TrajectoryMeasurement>::const_iterator itTraj = tmColl.begin(), itTrajEnd = tmColl.end();
 	itTraj != itTrajEnd; ++itTraj) {
 
       if(! itTraj->updatedState().isValid()) continue;
@@ -302,9 +235,9 @@ void PixelNtuplizer_RD::analyze(const edm::Event& iEvent, const edm::EventSetup&
                 fillEvt(iEvent,NbrTracks);
                 fillDet(hit_detId, IntSubDetID, theGeomDet);
 		fillVertex(theGeomDet);
-                fillClust(*clust, topol, theGeomDet);
+                fillClust(*clust, topol, theGeomDet, tsos);
                 fillPix(*clust, topol, theGeomDet);
-                fillTrack( tsos, *it, TrackNumber);
+                fillTrack( tsos, traj, TrackNumber);
                 //fillRecHit(pixeliter, topol, theGeomDet);
 
       	        //++++++++++
@@ -319,7 +252,7 @@ void PixelNtuplizer_RD::analyze(const edm::Event& iEvent, const edm::EventSetup&
 
 	    //fillTrackerHits(iEvent,hit);
 	    //++++++++++
-	    ts_->Fill();
+	    //ts_->Fill();
 	    //++++++++++
 
 	  } else {
@@ -333,12 +266,30 @@ void PixelNtuplizer_RD::analyze(const edm::Event& iEvent, const edm::EventSetup&
   }  // end loop over trajectories
  }  // end analyze function
 
-void PixelNtuplizer_RD::fillTrackOnly(const edm::Event& E, bool trajContainsPixelHit, int TrackNumber)
+void PixelNtuplizer_RD::fillTrackOnly(const edm::Event& E, int pixelHits, int stripHits, int TrackNumber, const Track& track)
 {
-  if(trajContainsPixelHit) trackonly_.pixelTrack = 1;
+  if(pixelHits > 0) trackonly_.pixelTrack = 1;
   trackonly_.tracknum = TrackNumber;
   trackonly_.run = E.id().run();
   trackonly_.evtnum = E.id().event();
+  trackonly_.NumPixelHits = pixelHits;
+  trackonly_.NumStripHits = stripHits;
+  trackonly_.chi2 = track.chi2();
+  trackonly_.ndof = track.ndof();
+  trackonly_.charge = track.charge();
+  trackonly_.theta = track.theta();
+  trackonly_.d0 = track.d0();
+  trackonly_.dz = track.dz();
+  trackonly_.p = track.p();
+  trackonly_.pt = track.pt();
+  trackonly_.px = track.px();
+  trackonly_.py = track.py();
+  trackonly_.pz = track.pz();
+  trackonly_.phi = track.phi();
+  trackonly_.eta = track.eta();
+  trackonly_.vx = track.vx();
+  trackonly_.vy = track.vy();
+  trackonly_.vz = track.vz();
 }
 
 void PixelNtuplizer_RD::fillEvt(const edm::Event& E,int NbrTracks)
@@ -378,7 +329,7 @@ void PixelNtuplizer_RD::fillVertex(const PixelGeomDetUnit* PixGeom)
   vertex_.r = PixGeom->surface().position().perp();
 }
 
-void PixelNtuplizer_RD::fillClust(const SiPixelCluster& matchIt, const RectangularPixelTopology* topol, const PixelGeomDetUnit* PixGeom) 
+void PixelNtuplizer_RD::fillClust(const SiPixelCluster& matchIt, const RectangularPixelTopology* topol, const PixelGeomDetUnit* PixGeom, TrajectoryStateOnSurface& tsos) 
 {
   clust_.charge = (matchIt.charge())/1000.0; // convert electrons to kilo-electrons
   clust_.size = matchIt.size();
@@ -404,55 +355,19 @@ void PixelNtuplizer_RD::fillClust(const SiPixelCluster& matchIt, const Rectangul
   clust_.edgeHitY = (int) ( topol->isItEdgePixelInY( clust_.minPixelCol ) || topol->isItEdgePixelInY( clust_.maxPixelCol ) );
 
   // calculate alpha and beta from cluster position
+  LocalTrajectoryParameters ltp = tsos.localParameters();
+  LocalVector localDir = ltp.momentum()/ltp.momentum().mag();
 
-  // get cluster center of gravity (of charge)
-  float xcenter = matchIt.x();
-  float ycenter = matchIt.y();
-  
-  // get the cluster position in local coordinates (cm) 
-  LocalPoint mylp = topol->localPosition( MeasurementPoint(xcenter, ycenter) );
+  float locx = localDir.x();
+  float locy = localDir.y();
+  float locz = localDir.z();
+  float loctheta = localDir.theta();
 
-  // get the cluster position in global coordinates (cm)
-  GlobalPoint gp = PixGeom->surface().toGlobal( mylp );
-  float gp_mod = sqrt( gp.x()*gp.x() + gp.y()*gp.y() + gp.z()*gp.z() );
+  clust_.clust_alpha = atan2( locz, locx );
+  clust_.clust_beta = atan2( locz, locy );
 
-  // normalize
-  float gpx = gp.x()/gp_mod;
-  float gpy = gp.y()/gp_mod;
-  float gpz = gp.z()/gp_mod;
-
-  // make a global vector out of the global point; this vector will point from the 
-  // origin of the detector to the cluster
-  GlobalVector gv(gpx, gpy, gpz);
-
-  // make local unit vector along local X axis
-  const Local3DVector lvx(1.0, 0.0, 0.0);
-
-  // get the unit X vector in global coordinates
-  GlobalVector gvx = PixGeom->surface().toGlobal( lvx );
-
-  // make local unit vector along local Y axis
-  const Local3DVector lvy(0.0, 1.0, 0.0);
-
-  // get the unit Y vector in global coordinates
-  GlobalVector gvy = PixGeom->surface().toGlobal( lvy );
-   
-  // make local unit vector along local Z axis
-  const Local3DVector lvz(0.0, 0.0, 1.0);
-
-  // get the unit Z vector in global coordinates
-  GlobalVector gvz = PixGeom->surface().toGlobal( lvz );
-    
-  // calculate the components of gv (the unit vector pointing to the cluster) 
-  // in the local coordinate system given by the basis {gvx, gvy, gvz}
-  // note that both gv and the basis {gvx, gvy, gvz} are given in global coordinates
-  float gv_dot_gvx = gv.x()*gvx.x() + gv.y()*gvx.y() + gv.z()*gvx.z();
-  float gv_dot_gvy = gv.x()*gvy.x() + gv.y()*gvy.y() + gv.z()*gvy.z();
-  float gv_dot_gvz = gv.x()*gvz.x() + gv.y()*gvz.y() + gv.z()*gvz.z();
-
-  // calculate angles
-  clust_.clust_alpha = atan2( gv_dot_gvz, gv_dot_gvx );
-  clust_.clust_beta  = atan2( gv_dot_gvz, gv_dot_gvy );
+  clust_.normalized_charge = clust_.charge / (det_.thickness / cos( loctheta ) );
+  if ( clust_.normalized_charge <=0 ) clust_.normalized_charge = -1 * clust_.normalized_charge;
 
 }
 
@@ -467,30 +382,31 @@ void PixelNtuplizer_RD::fillPix(const SiPixelCluster & LocPix, const Rectangular
       pixinfo_.adc[pixinfo_.npix] = holdpix.adc;
       LocalPoint lp = topol->localPosition(MeasurementPoint(holdpix.x, holdpix.y));
       pixinfo_.x[pixinfo_.npix] = lp.x();
-      pixinfo_.y[pixinfo_.npix]= lp.y();
+      pixinfo_.y[pixinfo_.npix] = lp.y();
       GlobalPoint GP =  PixGeom->surface().toGlobal(Local3DPoint(lp.x(),lp.y(),lp.z()));
       pixinfo_.gx[pixinfo_.npix] = GP.x();	
-      pixinfo_.gy[pixinfo_.npix]= GP.y();
-      pixinfo_.gz[pixinfo_.npix]= GP.z();
+      pixinfo_.gy[pixinfo_.npix] = GP.y();
+      pixinfo_.gz[pixinfo_.npix] = GP.z();
     }
 }
 
-void PixelNtuplizer_RD::fillTrack(TrajectoryStateOnSurface& tsos,const Trajectory &it, int TrackNumber) 
+void PixelNtuplizer_RD::fillTrack(TrajectoryStateOnSurface& tsos,const Trajectory &traj, int TrackNumber) 
 {
-  track_.pt = tsos.globalMomentum().transverse();
+  track_.pt = tsos.globalMomentum().perp();
+  track_.p = tsos.globalMomentum().mag();
   track_.px = tsos.globalMomentum().x();
   track_.py = tsos.globalMomentum().y();
   track_.pz = tsos.globalMomentum().z();
   track_.globalPhi = tsos.globalDirection().phi();
   track_.globalEta = tsos.globalDirection().eta();
+  track_.globalTheta = tsos.globalDirection().theta();
   track_.localPhi = tsos.localDirection().phi();
-  track_.localEta = tsos.localDirection().eta();
-  track_.chi2 = it.chiSquared();
-  track_.ndof = it.ndof();
-  track_.foundHits = it.foundHits();
+  track_.localTheta = tsos.localDirection().theta();
+  track_.chi2 = traj.chiSquared();
+  track_.ndof = traj.ndof();
+  track_.foundHits = traj.foundHits();
   track_.tracknum = TrackNumber;
 
-  // std::cout << " chi2 " << it->chiSquared()<< " ndof " << it->ndof() << endl;
 }
 
 
@@ -549,6 +465,7 @@ void PixelNtuplizer_RD::ClusterStruct::init()
   x = dummy_float;
   y = dummy_float;
   charge = dummy_float;
+  normalized_charge = dummy_float;
   size = dummy_int;
   size_x = dummy_int;
   size_y = dummy_int;
@@ -602,19 +519,22 @@ void PixelNtuplizer_RD::TrackStruct::init()
   float dummy_float = -9999.0;
   int dummy_int = -9999;
 
+  p = dummy_float;
   pt = dummy_float; 
   px = dummy_float;
   py = dummy_float;
   pz = dummy_float;   
+  globalTheta = dummy_float;
   globalEta = dummy_float;
   globalPhi = dummy_float;
-  localEta = dummy_float;
+  localTheta = dummy_float;
   localPhi = dummy_float;
   chi2 = dummy_float;
   ndof = dummy_int;
   tracknum = dummy_int;
+  foundHits = dummy_int;
 }
-
+/*
 void PixelNtuplizer_RD::TrackerHitStruct::init()
 {
   float dummy_float = -9999.0;
@@ -622,16 +542,35 @@ void PixelNtuplizer_RD::TrackerHitStruct::init()
   globalX = dummy_float;
   globalY = dummy_float;
   globalZ = dummy_float;
-}
+} */
 
 void PixelNtuplizer_RD::TrackOnlyStruct::init()
 {
   int dummy_int = -9999;
+  float dummy_float = -9999.0;
 
   run = dummy_int;
   evtnum = dummy_int;
   tracknum = dummy_int;
   pixelTrack = 0;
+  NumPixelHits = dummy_int;
+  NumStripHits = dummy_int;
+  chi2 = dummy_float;
+  ndof = dummy_float;
+  charge = dummy_int;
+  theta = dummy_float;
+  d0 = dummy_float;
+  dz = dummy_float;
+  p = dummy_float;
+  pt = dummy_float;
+  px = dummy_float;
+  py = dummy_float;
+  pz = dummy_float;
+  phi = dummy_float;
+  eta = dummy_float;
+  vx = dummy_float;
+  vy = dummy_float;
+  vz = dummy_float;
 }
 
 // define this as a plug-in

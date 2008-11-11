@@ -5,59 +5,18 @@
  *
  *
  ************************************************************/
-#include "FWCore/Framework/interface/ESHandle.h"
+
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
-#include "CalibTracker/Records/interface/SiStripDetCablingRcd.h"
-#include "CalibFormats/SiStripObjects/interface/SiStripDetCabling.h"
-#include "DataFormats/SiStripDetId/interface/SiStripSubStructure.h"
-#include "DQM/SiStripCommon/interface/SiStripFolderOrganizer.h"
-#include "DQM/SiStripCommon/interface/SiStripHistoId.h"
-#include "DQM/TrackerMonitorTrack/interface/MonitorTrackResiduals.h"
-#include "Geometry/CommonTopologies/interface/StripTopology.h"
-#include "RecoTracker/TransientTrackingRecHit/interface/TkTransientTrackingRecHitBuilder.h"
-#include "TrackingTools/PatternTools/interface/TrajectoryFitter.h"
-#include "TrackingTools/TrajectoryState/interface/TrajectoryStateOnSurface.h"
-#include "DataFormats/GeometryCommonDetAlgo/interface/MeasurementVector.h"
-#include "DataFormats/SiStripDetId/interface/StripSubdetector.h"
-#include "DataFormats/SiStripDetId/interface/SiStripDetId.h"
-#include "DataFormats/SiStripDetId/interface/TECDetId.h"
-#include "DataFormats/SiStripDetId/interface/TIBDetId.h"
-#include "DataFormats/SiStripDetId/interface/TIDDetId.h"
-#include "DataFormats/SiStripDetId/interface/TOBDetId.h"
-#include "TrackingTools/TrackFitters/interface/TrajectoryStateCombiner.h"
-#include <memory>
-#include <vector>
-
-
-#include "TrackingTools/Records/interface/TrackingComponentsRecord.h"
-
-#include "Alignment/CommonAlignmentAlgorithm/interface/AlignmentParameterStore.h"
-
-class MagneticField;
-class TrackerGeometry;
-
-
-//___________________________________________________________
-
-#include "DataFormats/TrackerRecHit2D/interface/SiPixelRecHitCollection.h"
-
-#include "FWCore/Framework/interface/EDAnalyzer.h"
-#include "FWCore/Framework/interface/Event.h"
-#include "DataFormats/Common/interface/Handle.h"
-#include "FWCore/Framework/interface/EventSetup.h"
-#include "FWCore/ParameterSet/interface/InputTag.h"
-
-#include "DataFormats/Common/interface/EDProduct.h"
-#include "DataFormats/Common/interface/Ref.h"
-
 #include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetUnit.h"
-#include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetType.h"
-
-#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "DataFormats/TrackerRecHit2D/interface/SiPixelRecHitCollection.h"
+#include "DQM/TrackerMonitorTrack/interface/MonitorTrackResiduals.h"
+#include "TrackingTools/PatternTools/interface/TrajectoryFitter.h"
+#include "TrackingTools/TrackFitters/interface/TrajectoryStateCombiner.h"
+#include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 #include "Alignment/OfflineValidation/interface/TrackerValidationVariables.h"
 
-
+using namespace reco;
 class TTree;
 class TFile;
 class RectangularPixelTopology;
@@ -73,13 +32,13 @@ class PixelNtuplizer_RD : public edm::EDAnalyzer
   virtual void analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup);
 
  protected:
-  void fillTrackOnly(const edm::Event&, bool, int);
+  void fillTrackOnly(const edm::Event&, int, int, int, const Track&);
   void fillEvt(const edm::Event&,int NbrTracks);
   void fillDet(const DetId &, uint, const PixelGeomDetUnit*);
   void fillVertex(const PixelGeomDetUnit*);
-  void fillClust(const SiPixelCluster&, const RectangularPixelTopology*, const PixelGeomDetUnit*);
+  void fillClust(const SiPixelCluster&, const RectangularPixelTopology*, const PixelGeomDetUnit*, TrajectoryStateOnSurface&);
   void fillPix(const SiPixelCluster&, const RectangularPixelTopology*, const PixelGeomDetUnit*);
-  void fillTrack(TrajectoryStateOnSurface&,const Trajectory &it, int);
+  void fillTrack(TrajectoryStateOnSurface&,const Trajectory&, int);
   
  private:
   edm::ParameterSet conf_;
@@ -88,7 +47,7 @@ class PixelNtuplizer_RD : public edm::EDAnalyzer
 
   TFile* tfile_;
   TTree* t_;  // tree filled on every pixel rec hit
-  TTree* ts_; // tree filled on every strip rec hit
+  //  TTree* ts_; // tree filled on every strip rec hit
   TTree* tt_; // tree filled every track
   
   void init();
@@ -135,6 +94,7 @@ class PixelNtuplizer_RD : public edm::EDAnalyzer
     float x;
     float y;
     float charge;
+    float normalized_charge;
     int size;
     int size_x;
     int size_y;
@@ -145,8 +105,8 @@ class PixelNtuplizer_RD : public edm::EDAnalyzer
     uint32_t geoId;
     int edgeHitX;
     int edgeHitY;    
-    float clust_alpha; // alpha from cluster position w.r.t detector center
-    float clust_beta;  // beta from cluster position w.r.t detector center
+    float clust_alpha;
+    float clust_beta;
 
     void init();
   } clust_;
@@ -187,12 +147,14 @@ class PixelNtuplizer_RD : public edm::EDAnalyzer
   struct TrackStruct{
 
     float pt;
+    float p;
     float px;
     float py;
     float pz;
+    float globalTheta;
     float globalEta;
     float globalPhi;
-    float localEta;
+    float localTheta;
     float localPhi;
     float chi2;
     float ndof;
@@ -202,7 +164,7 @@ class PixelNtuplizer_RD : public edm::EDAnalyzer
     void init();
     } track_;
 
-  struct TrackerHitStruct{
+  /*  struct TrackerHitStruct{
 
     float globalX;
     float globalY;
@@ -212,7 +174,7 @@ class PixelNtuplizer_RD : public edm::EDAnalyzer
     int tracknum;     // number of track processed (correlates with others)
 
     void init();
-    } trackerhits_;
+    } trackerhits_; */
 
   struct TrackOnlyStruct{
 
@@ -220,6 +182,24 @@ class PixelNtuplizer_RD : public edm::EDAnalyzer
     int evtnum;
     int tracknum;     // number of track processed (correlates with others)
     int pixelTrack;   // 0 = no, 1 = yes
+    int NumPixelHits;
+    int NumStripHits;
+    int charge;
+    float chi2;
+    float ndof;
+    float theta;
+    float d0;
+    float dz;
+    float p;
+    float pt;
+    float px;
+    float py;
+    float pz;
+    float phi;
+    float eta;
+    float vx;
+    float vy;
+    float vz;
 
     void init();
     } trackonly_;
