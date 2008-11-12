@@ -50,7 +50,7 @@ PixelCPETemplateReco::PixelCPETemplateReco(edm::ParameterSet const & conf,
 
   DoCosmics_ = conf.getParameter<bool>("DoCosmics");
 
-  //cout << "----------------------------------------- field_magnitude = " << field_magnitude << endl;
+  //  cout << "----------------------------------------- field_magnitude = " << field_magnitude << endl;
 
   if ( field_magnitude > 3.9 ) 
     {
