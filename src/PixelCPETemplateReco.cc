@@ -48,6 +48,8 @@ PixelCPETemplateReco::PixelCPETemplateReco(edm::ParameterSet const & conf,
   GlobalPoint center(0.0, 0.0, 0.0);
   float field_magnitude = magfield_->inTesla(center).mag();
 
+  DoCosmics_ = conf.getParameter<bool>("DoCosmics");
+
   //cout << "----------------------------------------- field_magnitude = " << field_magnitude << endl;
 
   if ( field_magnitude > 3.9 ) 
@@ -58,12 +60,15 @@ PixelCPETemplateReco::PixelCPETemplateReco(edm::ParameterSet const & conf,
     {
       if ( field_magnitude > 1.0 ) 
 	{
-	  templID_ = 1;
+	  if ( DoCosmics_ )
+	    templID_ = 10;
+	  else 
+	    templID_ = 1;
 	} 
       else 
 	{	 
 	  //--- allow for zero field operation with new template ID=2
-	  templID_ = 2;
+	  templID_ = 12;
 	}
     }
   
@@ -72,6 +77,8 @@ PixelCPETemplateReco::PixelCPETemplateReco(edm::ParameterSet const & conf,
   // Initialize template store to the selected ID [Morris, 6/25/08]
   
   templ_.pushfile( templID_ );
+  //cout << "templID_ = " << templID_ << endl;
+
 
   //cout << "About to read speed..." << endl;
   speed_ = conf.getParameter<int>( "speed");

@@ -6,7 +6,14 @@ templates = cms.ESProducer("PixelCPETemplateRecoESProducer",
     speed = cms.int32(0),
     PixelErrorParametrization = cms.string('NOTcmsim'),
     Alpha2Order = cms.bool(True),
-    UseClusterSplitter = cms.bool(False)
+    UseClusterSplitter = cms.bool(False),
+
+    # petar, for clusterProbability() from TTRHs
+    ClusterProbComputationFlag = cms.int32(0),
+
+    # gavril
+    DoCosmics = cms.bool(False)                       
+
 )
 
 
