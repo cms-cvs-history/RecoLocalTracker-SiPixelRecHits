@@ -48,7 +48,7 @@ PixelCPETemplateReco::PixelCPETemplateReco(edm::ParameterSet const & conf,
   GlobalPoint center(0.0, 0.0, 0.0);
   float field_magnitude = magfield_->inTesla(center).mag();
 
-  DoCosmics_ = conf.getParameter<bool>("DoCosmics");
+  DoCosmics_ = conf.getUntrackedParameter<bool>("DoCosmics");
 
   //  cout << "----------------------------------------- field_magnitude = " << field_magnitude << endl;
 
