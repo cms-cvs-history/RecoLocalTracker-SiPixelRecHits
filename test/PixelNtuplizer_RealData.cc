@@ -12,7 +12,6 @@
 #include "DataFormats/SiStripDetId/interface/SiStripSubStructure.h"
 #include "DQM/SiStripCommon/interface/SiStripFolderOrganizer.h"
 #include "DQM/SiStripCommon/interface/SiStripHistoId.h"
-#include "DQM/TrackerMonitorTrack/interface/MonitorTrackResiduals.h"
 #include "Geometry/CommonTopologies/interface/StripTopology.h"
 
 #include "RecoTracker/TransientTrackingRecHit/interface/TkTransientTrackingRecHitBuilder.h"
@@ -77,7 +76,6 @@
 #include "Geometry/CommonDetUnit/interface/GeomDetType.h"
 #include "Geometry/CommonDetUnit/interface/GeomDetUnit.h"
 #include "DQM/SiPixelCommon/interface/SiPixelFolderOrganizer.h"
-#include "DQM/SiPixelMonitorTrack/interface/SiPixelMonitorTrackResiduals.h"
 #include "DQMServices/Core/interface/DQMStore.h"
 #include "Alignment/OfflineValidation/interface/TrackerValidationVariables.h"
 
