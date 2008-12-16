@@ -1,5 +1,0 @@
-es_module = PixelCPEInitialESProducer {
-       string ComponentName = "PixelCPEInitial"
-       string PixelErrorParametrization = "NOTcmsim"  
-       bool   Alpha2Order = true
-}          
