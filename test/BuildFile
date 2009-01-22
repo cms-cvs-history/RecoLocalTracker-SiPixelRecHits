@@ -52,11 +52,13 @@
 <use name=boost>
 <use name=root>
 
-<flags EDM_PLUGIN=1>
-<library file=PixelNtuplizer.cc name=ReadPixelRecHit>
-</library>
-<library file=PixelNtuplizer_RealData.cc name=PixelNtuplizer_RealData>
-</library>
+#ggiurgiu@fnal.gov, 01/21/09: this was moved in DPGAnalysis/ SiPixelTools/
+#<flags EDM_PLUGIN=1>
+#<library file=PixelNtuplizer.cc name=ReadPixelRecHit>
+#</library>
+#<library file=PixelNtuplizer_RealData.cc name=PixelNtuplizer_RealData>
+#</library>
+
 
 #<flags EDM_PLUGIN=1>
 #<library file=AnalyzePixRecHits.cc name=AnalyzePixRecHits>
