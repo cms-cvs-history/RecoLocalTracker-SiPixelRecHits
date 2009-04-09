@@ -13,11 +13,6 @@
 <use name=boost>
 <use name=root>
 
-<flags EDM_PLUGIN=1>
-<library file=PixelNtuplizer.cc name=ReadPixelRecHit>
-</library>
-<library file=PixelNtuplizer_RealData.cc name=PixelNtuplizer_RealData>
-</library>
 
 #<flags EDM_PLUGIN=1>
 #<library file=AnalyzePixRecHits.cc name=AnalyzePixRecHits>
