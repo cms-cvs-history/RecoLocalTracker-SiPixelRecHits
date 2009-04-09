@@ -54,7 +54,7 @@ class PixelCPEBase : public PixelClusterParameterEstimator {
 				      const GeomDetUnit    & det ) const 
   {
     nRecHitsTotal_++ ;
-    setTheDet( det );
+    setTheDet( det, cl );
     computeAnglesFromDetPosition(cl, det);
     return std::make_pair( localPosition(cl,det), localError(cl,det) );
   }
@@ -67,7 +67,7 @@ class PixelCPEBase : public PixelClusterParameterEstimator {
 				      const LocalTrajectoryParameters & ltp) const 
   {
     nRecHitsTotal_++ ;
-    setTheDet( det );
+    setTheDet( det, cl );
     computeAnglesFromTrajectory(cl, det, ltp);
     return std::make_pair( localPosition(cl,det), localError(cl,det) );
   } 
@@ -85,7 +85,7 @@ class PixelCPEBase : public PixelClusterParameterEstimator {
 		double HalfPi = 0.5*TMath::Pi();
 		cotalpha_ = tan(HalfPi - alpha_);
     cotbeta_  = tan(HalfPi - beta_ );
-		setTheDet( det );
+		setTheDet( det, cl );
 		return std::make_pair( localPosition(cl,det), localError(cl,det) );
   }
 
@@ -110,28 +110,28 @@ class PixelCPEBase : public PixelClusterParameterEstimator {
 
   //--------------------------------------------------------------------------
   //--- Accessors of other auxiliary quantities
-  inline float cotAlphaFromCluster() const { return cotAlphaFromCluster_; }
-  inline float cotBetaFromCluster()  const { return cotBetaFromCluster_; }
-  inline float probabilityX()        const { return probabilityX_; }
-  inline float probabilityY()        const { return probabilityY_; }
-  inline float qBin()                const { return qBin_ ; }
+  inline float probabilityX()  const { return probabilityX_; }
+  inline float probabilityY()  const { return probabilityY_; }
+  inline float qBin()          const { return qBin_ ; }
+	inline bool  isOnEdge()      const { return isOnEdge_ ; }
+	inline bool  hasBadPixels()  const { return hasBadPixels_ ; }
+	inline bool  spansTwoRocks() const { return spansTwoROCs_ ; }
+	inline bool  hasFilledProb() const { return hasFilledProb_ ; }
 
 	//--- Flag to control how SiPixelRecHits compute clusterProbability().
-	//--- Note this is set via the configuration file, and it's simply passed
-	//--- to each TSiPixelRecHit.
-	inline unsigned int clusterProbComputationFlag() const {
-		return clusterProbComputationFlag_ ;
-	}
-	
-	
-	//-----------------------------------------------------------------------------
-	//! A convenience method to fill a whole SiPixelRecHitQuality word in one shot.
-	//! This way, we can keep the details of what is filled within the pixel
-	//! code and not expose the Transient SiPixelRecHit to it as well.  The name
-	//! of this function is chosen to match the one in SiPixelRecHit.
-	//-----------------------------------------------------------------------------
-	SiPixelRecHitQuality::QualWordType rawQualityWord() const;
+  //--- Note this is set via the configuration file, and it's simply passed
+  //--- to each TSiPixelRecHit.
+  inline unsigned int clusterProbComputationFlag() const {
+	    return clusterProbComputationFlag_ ;
+	  }
 
+  //-----------------------------------------------------------------------------
+  //! A convenience method to fill a whole SiPixelRecHitQuality word in one shot.
+  //! This way, we can keep the details of what is filled within the pixel
+  //! code and not expose the Transient SiPixelRecHit to it as well.  The name
+  //! of this function is chosen to match the one in SiPixelRecHit.
+  //-----------------------------------------------------------------------------
+  SiPixelRecHitQuality::QualWordType rawQualityWord() const;
 
 protected:
   //--- All methods and data members are protected to facilitate (for now)
@@ -172,38 +172,24 @@ protected:
   mutable float trk_lp_x;
   mutable float trk_lp_y;
 
-	//--- Counters
-	mutable int    nRecHitsTotal_ ;
-	mutable int    nRecHitsUsedEdge_ ;
-
-	// ggiurgiu@jhu.edu (10/18/2008)
-	mutable bool with_track_angle;
-
-	// [Petar, 5/18/07] 
-  // Add estimates of cot(alpha) and cot(beta) from the
-  // cluster length.  This can be used by:
-  // a) the seed cleaning
-  // b) any possible crude "quality" flag based on (dis)agreement between
-  //    W_pred and W (from charge lenght)
-  // c) an alternative 2nd pass CPE which reads charge per unit length (k_3D) from
-  //    the DB but then needs angle estimates to switch to 
-  mutable float cotAlphaFromCluster_;
-  mutable float cotBetaFromCluster_;
-
-  //--- Probability
-  mutable float probabilityX_ ; 
-  mutable float probabilityY_ ; 
-  mutable float qBin_ ;
-
+	//--- Probability
+	mutable float probabilityX_ ;
+	mutable float probabilityY_ ;
+	mutable float qBin_ ;
+	mutable bool  isOnEdge_ ;
+	mutable bool  hasBadPixels_ ;
+	mutable bool  spansTwoROCs_ ;
+	mutable bool  hasFilledProb_ ;
+	
 	//--- A flag that could be used to change the behavior of
 	//--- clusterProbability() in TSiPixelRecHit (the *transient* one).
 	//--- The problem is that the transient hits are made after the CPE runs
 	//--- and they don't get the access to the PSet, so we pass it via the
 	//--- CPE itself...
 	//
-	unsigned int clusterProbComputationFlag_ ;
-
-	//---------------------------
+	unsigned int clusterProbComputationFlag_ ;//--- Probability
+  
+  //---------------------------
 
   // [Petar, 2/23/07]
   // Since the sign of the Lorentz shift appears to
@@ -214,6 +200,10 @@ protected:
   mutable double lorentzShiftY_;   // a FULL shift, not 1/2 like theLShiftY!
   mutable double lorentzShiftInCmX_;   // a FULL shift, in cm
   mutable double lorentzShiftInCmY_;   // a FULL shift, in cm
+
+  //--- Counters
+  mutable int    nRecHitsTotal_ ;
+  mutable int    nRecHitsUsedEdge_ ;
 
 
   //--- Global quantities
@@ -232,7 +222,7 @@ protected:
   //---------------------------------------------------------------------------
   //  Methods.
   //---------------------------------------------------------------------------
-  void       setTheDet( const GeomDetUnit & det ) const ;
+  void       setTheDet( const GeomDetUnit & det, const SiPixelCluster & cluster ) const ;
   //
   MeasurementPoint measurementPosition( const SiPixelCluster&, 
 					const GeomDetUnit & det) const ;
