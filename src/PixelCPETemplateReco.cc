@@ -62,7 +62,7 @@ PixelCPETemplateReco::PixelCPETemplateReco(edm::ParameterSet const & conf,
       if ( field_magnitude > 1.0 ) 
 	{
 	  if ( DoCosmics_ )
-	    templID_ = 11;
+	    templID_ = 10;
 	  else 
 	    templID_ = 1;
 	} 
@@ -121,7 +121,7 @@ LocalPoint
 PixelCPETemplateReco::localPosition(const SiPixelCluster& cluster, const GeomDetUnit & det) const 
 {
 
-  setTheDet( det, cluster );
+  setTheDet( det );
 
   //int ierr;   //!< return status
   int ID = templID_; //!< take the template ID that was selected by the constructor [Morris, 6/25/2008]
@@ -237,15 +237,9 @@ PixelCPETemplateReco::localPosition(const SiPixelCluster& cluster, const GeomDet
   // Output:
   float nonsense = -99999.9; // nonsense init value
   templXrec_ = templYrec_ = templSigmaX_ = templSigmaY_ = nonsense;
-
-	// If the template recontruction fails, we want to return 1.0 for now
-	templProbY_ = templProbX_ = 1.0;
-	templQbin_ = 0;
-	// We have a boolean denoting whether the reco failed or not
-  hasFilledProb_  = false;
-	
-	
-	float templYrec1_ = nonsense;
+  templProbY_ = templProbX_ = nonsense;
+  
+  float templYrec1_ = nonsense;
   float templXrec1_ = nonsense;
   float templYrec2_ = nonsense;
   float templXrec2_ = nonsense;
@@ -426,7 +420,7 @@ PixelCPETemplateReco::localPosition(const SiPixelCluster& cluster, const GeomDet
   probabilityX_ = templProbX_;
   probabilityY_ = templProbY_;
   qBin_         = templQbin_;
-  if(ierr==0) hasFilledProb_ = true;
+
   
   LocalPoint template_lp = LocalPoint( nonsense, nonsense );
   template_lp = LocalPoint( templXrec_, templYrec_ );      
@@ -442,7 +436,7 @@ LocalError
 PixelCPETemplateReco::localError( const SiPixelCluster& cluster, 
 				  const GeomDetUnit& det ) const 
 {
-  setTheDet( det, cluster );
+  setTheDet( det );
   
   //--- Default is the maximum error used for edge clusters.
   float xerr = thePitchX / sqrt(12.0);
