@@ -15,8 +15,6 @@
 
 #include "RecoLocalTracker/SiPixelRecHits/interface/PixelCPEBase.h"
 
-#include "FWCore/MessageLogger/interface/MessageLogger.h"
-
 //#define TPDEBUG
 #define CORRECT_FOR_BIG_PIXELS
 
@@ -43,9 +41,9 @@ const float degsPerRad = 57.29578;
 //-----------------------------------------------------------------------------
 PixelCPEBase::PixelCPEBase(edm::ParameterSet const & conf, const MagneticField *mag, const SiPixelLorentzAngle* lorentzAngle)
   : theDet(0), nRecHitsTotal_(0), nRecHitsUsedEdge_(0),
-		probabilityX_(0.0), probabilityY_(0.0), qBin_(0),
-    isOnEdge_(0), hasBadPixels_(0), spansTwoROCs_(0),
-		hasFilledProb_(0), clusterProbComputationFlag_(0)
+    cotAlphaFromCluster_(-99999.0), cotBetaFromCluster_(-99999.0),
+    probabilityX_(-99999.0), probabilityY_(-99999.0), qBin_(-99999.0),
+    clusterProbComputationFlag_(0)
 {
   //--- Lorentz angle tangent per Tesla
 //   theTanLorentzAnglePerTesla =
@@ -66,21 +64,22 @@ PixelCPEBase::PixelCPEBase(edm::ParameterSet const & conf, const MagneticField *
   //-- Switch on/off E.B 
   alpha2Order = conf.getParameter<bool>("Alpha2Order");
 
-	//--- A flag that could be used to change the behavior of
-	//--- clusterProbability() in TSiPixelRecHit (the *transient* one).
-	//--- The problem is that the transient hits are made after the CPE runs
-	//--- and they don't get the access to the PSet, so we pass it via the
-	//--- CPE itself...
-	//
-	clusterProbComputationFlag_
-		= (unsigned int) conf.getParameter<int>("ClusterProbComputationFlag");
+  //--- A flag that could be used to change the behavior of
+  //--- clusterProbability() in TSiPixelRecHit (the *transient* one).  
+  //--- The problem is that the transient hits are made after the CPE runs
+  //--- and they don't get the access to the PSet, so we pass it via the
+  //--- CPE itself...
+  //
+  clusterProbComputationFlag_ 
+    = (unsigned int) conf.getParameter<int>("ClusterProbComputationFlag");
+
 }
 
 //-----------------------------------------------------------------------------
 //  One function to cache the variables common for one DetUnit.
 //-----------------------------------------------------------------------------
 void
-PixelCPEBase::setTheDet( const GeomDetUnit & det, const SiPixelCluster & cluster ) const 
+PixelCPEBase::setTheDet( const GeomDetUnit & det ) const 
 {
   if ( theDet == &det )
     return;       // we have already seen this det unit
@@ -155,34 +154,9 @@ PixelCPEBase::setTheDet( const GeomDetUnit & det, const SiPixelCluster & cluster
     //cout<<" lorentz shift "<<theLShiftX<<" "<<theLShiftY<<endl;
     theLShiftY=0.;
   }
-	
-	//--- Geometric Quality Information
-	int minInX,minInY,maxInX,maxInY=0;
-	minInX = cluster.minPixelRow();
-	minInY = cluster.minPixelCol();
-	maxInX = cluster.maxPixelRow();
-	maxInY = cluster.maxPixelCol();
-	
-	if(theTopol->isItEdgePixelInX(minInX) || theTopol->isItEdgePixelInX(maxInX) ||
-		theTopol->isItEdgePixelInY(minInY) || theTopol->isItEdgePixelInY(maxInY) ) {
-		isOnEdge_ = true;
-	}
-	else isOnEdge_ = false;
 
-	// Bad Pixels have their charge set to 0 in the clusterizer
-	hasBadPixels_ = false;
-	for(unsigned int i=0; i<cluster.pixelADC().size(); ++i) {
-		if(cluster.pixelADC()[i] == 0) hasBadPixels_ = true;
-	}
-	
-	if(theTopol->containsBigPixelInX(minInX,maxInX) ||
-		theTopol->containsBigPixelInY(minInY,maxInY) ) {
-		spansTwoROCs_ = true;
-	}
-	else spansTwoROCs_ = false;
-
-	if (theVerboseLevel > 1) 
-	{
+  if (theVerboseLevel > 1) 
+    {
       LogDebug("PixelCPEBase") << "***** PIXEL LAYOUT *****" 
 			       << " thePart = " << thePart
 			       << " theThickness = " << theThickness
@@ -271,6 +245,7 @@ computeAnglesFromDetPosition(const SiPixelCluster & cl,
   cotalpha_ = gv_dot_gvx / gv_dot_gvz;
   cotbeta_  = gv_dot_gvy / gv_dot_gvz;
 
+  with_track_angle = false;
 }
 
 //-----------------------------------------------------------------------------
@@ -311,6 +286,8 @@ computeAnglesFromTrajectory( const SiPixelCluster & cl,
   trk_lp_x = trk_lp.x();
   trk_lp_y = trk_lp.y();
     
+  with_track_angle = true;
+
 }
 
 //-----------------------------------------------------------------------------
@@ -331,7 +308,7 @@ computeAnglesFromTrajectory( const SiPixelCluster & cl,
 LocalPoint
 PixelCPEBase::localPosition( const SiPixelCluster& cluster, 
 			     const GeomDetUnit & det) const {
-  setTheDet( det, cluster );
+  setTheDet( det );
   
   float lpx = xpos(cluster);
   float lpy = ypos(cluster);
@@ -611,40 +588,45 @@ PixelCPEBase::computeLorentzShifts() const
   }
 }
 
+
+
+
 //-----------------------------------------------------------------------------
 //! A convenience method to fill a whole SiPixelRecHitQuality word in one shot.
 //! This way, we can keep the details of what is filled within the pixel
 //! code and not expose the Transient SiPixelRecHit to it as well.  The name
 //! of this function is chosen to match the one in SiPixelRecHit.
 //-----------------------------------------------------------------------------
-SiPixelRecHitQuality::QualWordType
+SiPixelRecHitQuality::QualWordType 
 PixelCPEBase::rawQualityWord() const
 {
-	SiPixelRecHitQuality::QualWordType qualWord(0);
+  SiPixelRecHitQuality::QualWordType qualWord;
 
-	SiPixelRecHitQuality::thePacking.setProbabilityX  ( probabilityX_ ,
-		qualWord );
+  SiPixelRecHitQuality::thePacking.setCotAlphaFromCluster( cotAlphaFromCluster_ , 
+							   qualWord );
 
-	SiPixelRecHitQuality::thePacking.setProbabilityY  ( probabilityY_ ,
-		qualWord );
+  SiPixelRecHitQuality::thePacking.setCotBetaFromCluster ( cotBetaFromCluster_ ,
+							   qualWord );
 
-	SiPixelRecHitQuality::thePacking.setQBin          ( (int)qBin_,
-		qualWord );
+  SiPixelRecHitQuality::thePacking.setProbabilityX( probabilityX_ ,
+						    qualWord );
 
-	SiPixelRecHitQuality::thePacking.setIsOnEdge      ( isOnEdge_,
-		qualWord );
+  SiPixelRecHitQuality::thePacking.setProbabilityY( probabilityY_ , 
+						    qualWord );
 
-	SiPixelRecHitQuality::thePacking.setHasBadPixels  ( hasBadPixels_,
-		qualWord );
+  SiPixelRecHitQuality::thePacking.setQBin         ( qBin_, 
+					             qualWord );
 
-	SiPixelRecHitQuality::thePacking.setSpansTwoROCs  ( spansTwoROCs_,
-		qualWord );
+  //--- &&& We're not computing these three yet...
+  //--- &&& But we should!
+  // SiPixelRecHitQuality::thePacking.setIsOnEdge     ( flag, 
+  //						        qualWord );
 
-	SiPixelRecHitQuality::thePacking.setHasFilledProb ( hasFilledProb_,
-		qualWord );
+  // SiPixelRecHitQuality::thePacking.setHasBadPixels ( flag, 
+  //					                qualWord );
 
-	edm::LogInfo("qualityword")  << "prob x = " << probabilityX_ << "\tprob y = " << probabilityY_ << "\tqbin = " << qBin_
-						<< "\nonedge = " << isOnEdge_ << "\tbadpixels = " << hasBadPixels_ << "\tspansrocs = " << spansTwoROCs_ << "\nfilled = " << hasFilledProb_ << "\n";
+  // SiPixelRecHitQuality::thePacking.setSpansTwoROCs ( flag, 
+  //   					                qualWord );
 
-	return qualWord;
+  return qualWord;
 }

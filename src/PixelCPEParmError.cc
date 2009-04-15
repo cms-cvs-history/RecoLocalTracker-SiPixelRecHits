@@ -53,7 +53,7 @@ PixelCPEParmError::~PixelCPEParmError()
 LocalError  
 PixelCPEParmError::localError( const SiPixelCluster& cluster, const GeomDetUnit & det)const 
 {
-  setTheDet( det, cluster );
+  setTheDet( det );
 
   //--- Default is the maximum error used for edge clusters.
   float xerr = thePitchX / sqrt(12.);
