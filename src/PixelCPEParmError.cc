@@ -102,7 +102,7 @@ PixelCPEParmError::localError( const SiPixelCluster& cluster, const GeomDetUnit 
   DetId detid(det.geographicalId());
   if (detid.subdetId()==1) {
     PXBDetId pxbdetid(detid);
-    if(pxbdetid.layer()>3){
+    if(pxbdetid.layer()>4){
       xerr = thePitchX / sqrt(12.);
       yerr = thePitchY / sqrt(12.);
     }
