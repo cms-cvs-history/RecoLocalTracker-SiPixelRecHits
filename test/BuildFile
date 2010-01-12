@@ -25,7 +25,7 @@
 <use name=Geometry/TrackerGeometryBuilder>
 <use name=Geometry/TrackerTopology>
 <use name=MagneticField/Engine>
-<use name=PhysicsTools/UtilAlgos>
+<use name=CommonTools/UtilAlgos>
 <use name=RecoLocalTracker/ClusterParameterEstimator>
 <use name=RecoLocalTracker/Records>
 <use name=RecoLocalTracker/SiPixelRecHits>
@@ -43,7 +43,7 @@
 
 
 # to use root histos inside the analyzer
-## <use name=PhysicsTools/UtilAlgos>
+## <use name=CommonTools/UtilAlgos>
 ## <use name=FWCore/ServiceRegistry> # GF: Not sure whether really needed...
 # Petar: commented out as these are a part of the above list which was
 # automatically generated.
