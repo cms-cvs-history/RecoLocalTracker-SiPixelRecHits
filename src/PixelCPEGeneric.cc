@@ -1,6 +1,10 @@
 #include "RecoLocalTracker/SiPixelRecHits/interface/PixelCPEGeneric.h"
 
 #include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetUnit.h"
+//Carlotta (next 3 lines)
+#include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
+#include "DataFormats/SiPixelDetId/interface/PXFDetId.h"
+#include "DataFormats/DetId/interface/DetId.h"
 #include "Geometry/TrackerTopology/interface/RectangularPixelTopology.h"
 
 // this is needed to get errors from templates
@@ -50,7 +54,9 @@ PixelCPEGeneric::PixelCPEGeneric(edm::ParameterSet const & conf,
   IrradiationBiasCorrection_ = conf.getParameter<bool>("IrradiationBiasCorrection");
   DoCosmics_                 = conf.getParameter<bool>("DoCosmics");
   LoadTemplatesFromDB_       = conf.getParameter<bool>("LoadTemplatesFromDB");
-
+  //Carlotta (next 2 lines)
+  Upgrade_                   = conf.getParameter<bool>("Upgrade");
+  SmallPitch_                = conf.getParameter<bool>("SmallPitch");
   if ( !UseErrorsFromTemplates_ && ( TruncatePixelCharge_       || 
 				     IrradiationBiasCorrection_ || 
 				     DoCosmics_                 ||
@@ -75,7 +81,7 @@ PixelCPEGeneric::PixelCPEGeneric(edm::ParameterSet const & conf,
 					<< ( *templateDBobject_ ).version() << ". Template ID is " << templID_;
 		}
 		else 
-		{
+		{ 
 			if ( !templ_.pushfile( templID_ ) )
 				throw cms::Exception("InvalidCalibrationLoaded") 
 					<< "ERROR: Templates not loaded correctly from text file. Reconstruction will fail." << " Template ID is " << templID_;
@@ -116,9 +122,9 @@ PixelCPEGeneric::localPosition(const SiPixelCluster& cluster,
 {
   setTheDet( det, cluster );  //!< Initialize this det unit
   computeLorentzShifts();  //!< correctly compute lorentz shifts in X and Y
-	templID_ = templateDBobject_->getTemplateID(theDet->geographicalId().rawId());
+
 	if ( UseErrorsFromTemplates_ )
-    {
+    {   templID_ = templateDBobject_->getTemplateID(theDet->geographicalId().rawId());
       bool fpix;  //!< barrel(false) or forward(true)
       if ( thePart == GeomDetEnumerators::PixelBarrel )
 	fpix = false;    // no, it's not forward -- it's barrel
@@ -571,7 +577,122 @@ PixelCPEGeneric::localError( const SiPixelCluster& cluster,
   bool bigInX = theTopol->containsBigPixelInX( minPixelRow, maxPixelRow ); 	 
   bool bigInY = theTopol->containsBigPixelInY( minPixelCol, maxPixelCol );
 
-  if ( !with_track_angle && DoCosmics_ )
+// Start of Carlotta's changes
+  if( Upgrade_ )
+   {
+     //cout << " I'm in Upgrade!! " << endl;
+
+     DetId id = (det.geographicalId());
+     int layer = PXBDetId::PXBDetId(id).layer();
+     // cout << "layer " << layer << endl;
+
+     if ( thePart == GeomDetEnumerators::PixelBarrel ) {
+
+       // cout << "we are in BARREL" << endl;
+
+       if( SmallPitch_ && layer == 1 )
+         {
+
+           // cout << " small pitch " << SmallPitch_ << " layer " << layer << endl;
+
+           if ( !edgex )
+             {
+               // in case of low threshold (2000 electrons):
+               if      ( sizex == 1 ) xerr = 0.00088; // Size = 1 -> Sigma = 12.1 um
+               else if ( sizex == 2 ) xerr = 0.00065; // Size = 2 -> Sigma = 7.2 um
+               else if ( sizex == 3 ) xerr = 0.00116; // Size = 3 -> Sigma = 10.5 um
+               else                   xerr = 0.01057;
+
+               /*
+               //in case of high threshold (3700 electrons):
+               if      ( sizex == 1 ) xerr = 0.00121; // Size = 1 -> Sigma = 12.1 um
+               else if ( sizex == 2 ) xerr = 0.00072; // Size = 2 -> Sigma = 7.2 um
+               else if ( sizex == 3 ) xerr = 0.00105; // Size = 3 -> Sigma = 10.5 um
+               else                   xerr = 0.01057;
+               */
+             }
+           if ( !edgey )
+             {
+
+               // in case of low threshold (2000 electrons):
+               if      ( sizey ==  1 ) yerr = 0.00202; // 21.8 um
+               else if ( sizey ==  2 ) yerr = 0.00103; // 14.5 um
+               else if ( sizey ==  3 ) yerr = 0.00141; // 19 um
+               else if ( sizey ==  4 ) yerr = 0.00157; // 20 um
+               else if ( sizey ==  5 ) yerr = 0.00157; // 20 um
+               else if ( sizey ==  6 ) yerr = 0.00158; // 21 um
+               else if ( sizey ==  7 ) yerr = 0.00163; // 20 um
+               else if ( sizey ==  8 ) yerr = 0.00159; // 20 um
+               else if ( sizey ==  9 ) yerr = 0.00155; // 21 um
+               else                    yerr = 0.00164; // 21 um
+
+               /*
+               //in case of high threshold(3700 electrons):
+               if      ( sizey ==  1 ) yerr = 0.00218; // 21.8 um
+               else if ( sizey ==  2 ) yerr = 0.00145; // 14.5 um
+               else if ( sizey ==  3 ) yerr = 0.00189; // 19 um
+               else if ( sizey ==  4 ) yerr = 0.00201; // 20 um
+               else if ( sizey ==  5 ) yerr = 0.00198; // 20 um
+               else if ( sizey ==  6 ) yerr = 0.00211; // 21 um
+               else if ( sizey ==  7 ) yerr = 0.00198; // 20 um
+               else if ( sizey ==  8 ) yerr = 0.00203; // 20 um
+               else if ( sizey ==  9 ) yerr = 0.00210; // 21 um
+               else                    yerr = 0.00207; // 21 um
+               */
+             }
+         }
+       // if layer != 1....we still have standard pitch + standard thickness
+       else
+         {
+
+           // cout << " ELSE  " << SmallPitch_ << " layer " << layer << endl;
+
+           if ( !edgex )
+             {
+               if      ( sizex == 1 ) xerr = 0.00129; // Size = 1 -> Sigma = 12.9 um
+               else if ( sizex == 2 ) xerr = 0.00085; // Size = 2 -> Sigma = 8.5 um
+               else if ( sizex == 3 ) xerr = 0.00133; // Size = 3 -> Sigma = 13.3 um
+               else                   xerr = 0.01658;
+             }
+           if ( !edgey )
+             {
+               if      ( sizey ==  1 ) yerr = 0.00327; // 32.7 um
+               else if ( sizey ==  2 ) yerr = 0.00173; // 17.3 um
+               else if ( sizey ==  3 ) yerr = 0.00222; // 22 um
+               else if ( sizey ==  4 ) yerr = 0.00242; // 24 um
+               else if ( sizey ==  5 ) yerr = 0.00241; // 24 um
+               else if ( sizey ==  6 ) yerr = 0.00234; // 23 um
+               else if ( sizey ==  7 ) yerr = 0.00232; // 23 um
+               else if ( sizey ==  8 ) yerr = 0.00242; // 24 um
+               else if ( sizey ==  9 ) yerr = 0.00226; // 22 um
+               else                    yerr = 0.00235; // 23 um
+             }
+         }
+     }
+     // if forward
+     else
+       {
+         if ( !edgex )
+           {
+             if      ( sizex == 1 ) xerr = 0.0020;
+             else if ( sizex == 2 ) xerr = 0.0020;
+             else                   xerr = 0.0020;
+           }
+         if ( !edgey )
+           {
+             if  ( sizey == 1 ) yerr = 0.00210; // 21 um
+             else               yerr = 0.00075; // 7.5 um
+           }
+         // cout << "we are in ENDCAPPP " << xerr << " " << yerr << endl;
+       } //end if endcap
+
+
+     //cout << "Small " << SmallPitch_ << " " << thePart << " layer " << layer << " errors finally " << sizex << " " << xerr << " " << sizey << " " << yerr << endl;
+   } // end if Upgrade_
+
+
+
+  else if ( !with_track_angle && DoCosmics_ )
     {
       //cout << "Track angles are not known and we are processing cosmics." << endl; 
       //cout << "Default angle estimation which assumes track from PV (0,0,0) does not work." << endl;
