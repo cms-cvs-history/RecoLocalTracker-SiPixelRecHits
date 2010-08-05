@@ -1,6 +1,9 @@
 #include "RecoLocalTracker/SiPixelRecHits/interface/PixelCPEGeneric.h"
 
 #include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetUnit.h"
+#include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
+#include "DataFormats/SiPixelDetId/interface/PXFDetId.h"
+#include "DataFormats/DetId/interface/DetId.h"
 #include "Geometry/TrackerTopology/interface/RectangularPixelTopology.h"
 
 // this is needed to get errors from templates
@@ -50,6 +53,11 @@ PixelCPEGeneric::PixelCPEGeneric(edm::ParameterSet const & conf,
   IrradiationBiasCorrection_ = conf.getParameter<bool>("IrradiationBiasCorrection");
   DoCosmics_                 = conf.getParameter<bool>("DoCosmics");
   LoadTemplatesFromDB_       = conf.getParameter<bool>("LoadTemplatesFromDB");
+  //Carlotta:
+  Upgrade_                   = conf.getParameter<bool>("Upgrade");
+  SmallPitch_                = conf.getParameter<bool>("SmallPitch");
+
+
 
   if ( !UseErrorsFromTemplates_ && ( TruncatePixelCharge_       || 
 				     IrradiationBiasCorrection_ || 
@@ -116,12 +124,13 @@ PixelCPEGeneric::PixelCPEGeneric(edm::ParameterSet const & conf,
     } // if ( UseErrorsFromTemplates_ )
   
   //cout << endl;
-  //cout << "From PixelCPEGeneric::PixelCPEGeneric(...)" << endl;
-  //cout << "(int)UseErrorsFromTemplates_ = " << (int)UseErrorsFromTemplates_    << endl;
-  //cout << "TruncatePixelCharge_         = " << (int)TruncatePixelCharge_       << endl;      
-  //cout << "IrradiationBiasCorrection_   = " << (int)IrradiationBiasCorrection_ << endl;
-  //cout << "(int)DoCosmics_              = " << (int)DoCosmics_                 << endl;
-  //cout << "(int)LoadTemplatesFromDB_    = " << (int)LoadTemplatesFromDB_       << endl;
+  cout << "From PixelCPEGeneric::PixelCPEGeneric(...)" << endl;
+  cout << "(int)UseErrorsFromTemplates_ = " << (int)UseErrorsFromTemplates_    << endl;
+  cout << "TruncatePixelCharge_         = " << (int)TruncatePixelCharge_       << endl;      
+  cout << "IrradiationBiasCorrection_   = " << (int)IrradiationBiasCorrection_ << endl;
+  cout << "(int)DoCosmics_              = " << (int)DoCosmics_                 << endl;
+  cout << "(int)LoadTemplatesFromDB_    = " << (int)LoadTemplatesFromDB_       << endl;
+  cout << "(int)with_track_angle        = " << with_track_angle           << endl;
   //cout << endl;
 
 }
@@ -382,6 +391,13 @@ generic_position_formula( int size,                //!< Size of this projection.
 			  double size_cut         //!< Use edge when size == cuts
 			 ) const
 {
+
+
+
+  //Carlotta
+  // cout << "from CPEGeneric " << endl;
+
+
   double geom_center = 0.5 * ( upper_edge_first_pix + lower_edge_last_pix );
 
   //--- The case of only one pixel in this projection is separate.  Note that
@@ -407,6 +423,24 @@ generic_position_formula( int size,                //!< Size of this projection.
     theThickness * cot_angle                     // geometric correction (in cm)
     - 2 * half_lorentz_shift;                    // (in cm) &&& check fpix!  
   
+
+
+
+
+
+  //Carlotta
+  // cout << "from CPEGeneric , Thickness " << theThickness << endl;
+
+
+
+
+
+
+
+
+
+
+
 
   //--- Total length of the two edge pixels (first+last)
   double sum_of_edge = 0.0;
@@ -444,7 +478,7 @@ generic_position_formula( int size,                //!< Size of this projection.
 	if(Qsum==0) Qsum=1.0;
   double hit_pos = geom_center + 0.5*(Qdiff/Qsum) * W_eff + half_lorentz_shift;
 
-  //--- Debugging output
+  //--- Debugging output...Carlotta commented
   if (theVerboseLevel > 20) {
     if ( thePart == GeomDetEnumerators::PixelBarrel ) {
       cout << "\t >>> We are in the Barrel." ;
@@ -603,11 +637,106 @@ PixelCPEGeneric::localError( const SiPixelCluster& cluster,
   bool bigInX = theTopol->containsBigPixelInX( minPixelRow, maxPixelRow ); 	 
   bool bigInY = theTopol->containsBigPixelInY( minPixelCol, maxPixelCol );
 
-  if ( !with_track_angle && DoCosmics_ )
+
+
+  //Carlotta
+  // cout << "with_track_angle and DoCosmics " <<  with_track_angle << " " << (int)DoCosmics_ << " Upgrade_ " << Upgrade_ << endl;
+
+
+  //Carlotta 
+  if( Upgrade_ ) 
+   {
+     //cout << " I'm in Upgrade!! " << endl; 
+
+     DetId id = (det.geographicalId());
+     int layer = PXBDetId::PXBDetId(id).layer();
+     // cout << "layer " << layer << endl;
+     
+     if ( thePart == GeomDetEnumerators::PixelBarrel ) {
+       if( SmallPitch_ && layer == 1 ) 
+	 { // PXB Small Pitch
+	   if ( !edgex )
+	     {
+	       // in case of low threshold (2000 electrons):
+	       if      ( sizex == 1 ) xerr = 0.00088; // Size = 1 -> Sigma = 12.1 um 
+	       else if ( sizex == 2 ) xerr = 0.00065; // Size = 2 -> Sigma = 7.2 um      
+	       else if ( sizex == 3 ) xerr = 0.00116; // Size = 3 -> Sigma = 10.5 um
+	       else                   xerr = 0.01057;
+	     } // End of PXB Small Pitch X
+	   if ( !edgey )
+	     {
+	       // in case of low threshold (2000 electrons):
+	       if      ( sizey ==  1 ) yerr = 0.00202; // 21.8 um 
+	       else if ( sizey ==  2 ) yerr = 0.00103; // 14.5 um      
+	       else if ( sizey ==  3 ) yerr = 0.00141; // 19 um
+	       else if ( sizey ==  4 ) yerr = 0.00157; // 20 um
+	       else if ( sizey ==  5 ) yerr = 0.00157; // 20 um
+	       else if ( sizey ==  6 ) yerr = 0.00158; // 21 um
+	       else if ( sizey ==  7 ) yerr = 0.00163; // 20 um
+	       else if ( sizey ==  8 ) yerr = 0.00159; // 20 um
+	       else if ( sizey ==  9 ) yerr = 0.00155; // 21 um
+	       else                    yerr = 0.00164; // 21 um
+	     } // End of PXB Small Pitch Y
+	 } // End of PXB Small Pitch
+       else
+	 {  // PXB Reg Pitch
+	   if ( !edgex )
+	     {
+	       if      ( sizex == 1 ) xerr = 0.00129; // Size = 1 -> Sigma = 12.9 um  
+	       else if ( sizex == 2 ) xerr = 0.00085; // Size = 2 -> Sigma = 8.5 um      
+	       else if ( sizex == 3 ) xerr = 0.00133; // Size = 3 -> Sigma = 13.3 um
+	       else                   xerr = 0.01658;
+	     }
+	   if ( !edgey )
+	     {
+	       if      ( sizey ==  1 ) yerr = 0.00327; // 32.7 um 
+	       else if ( sizey ==  2 ) yerr = 0.00173; // 17.3 um      
+	       else if ( sizey ==  3 ) yerr = 0.00222; // 22 um
+	       else if ( sizey ==  4 ) yerr = 0.00242; // 24 um
+	       else if ( sizey ==  5 ) yerr = 0.00241; // 24 um
+	       else if ( sizey ==  6 ) yerr = 0.00234; // 23 um
+	       else if ( sizey ==  7 ) yerr = 0.00232; // 23 um
+	       else if ( sizey ==  8 ) yerr = 0.00242; // 24 um
+	       else if ( sizey ==  9 ) yerr = 0.00226; // 22 um
+	       else                    yerr = 0.00235; // 23 um
+	     } // End of PXB Reg Pitch Y
+	 }  // End of PXB Reg Pitch
+     } // End of PXB
+     // if forward
+     else
+       { // FPix
+	 if ( !edgex )
+	   {
+             if      ( sizex == 1 ) xerr = 0.00166;      // Old 0.0020
+             else if ( sizex == 2 ) xerr = 0.000939;     // Old 0.0020
+             else if ( sizex == 3 ) xerr = 0.00157;      // Old 0.0020
+             else                   xerr = 0.0017;       // Old 0.0020 for >=4
+	   }	 
+	 if ( !edgey )
+	   {
+                    if      ( sizey == 1 ) yerr = 0.00267;      // Old 0.0021
+                    else if ( sizey == 2 ) yerr = 0.00117;      // Old 0.00075
+                    else if ( sizey == 3 ) yerr = 0.00227;      // Old 0.00075
+                    else                   yerr = 0.00222;      // Old 0.00075 for >=4
+	   }
+	 // cout << "we are in ENDCAPPP " << xerr << " " << yerr << endl;
+       } //end if endcap
+
+
+     //cout << "Small " << SmallPitch_ << " " << thePart << " layer " << layer << " errors finally " << sizex << " " << xerr << " " << sizey << " " << yerr << endl;
+   } // end if Upgrade_
+
+
+
+
+
+
+  
+  else if ( !with_track_angle && DoCosmics_ )
     {
       //cout << "Track angles are not known and we are processing cosmics." << endl; 
       //cout << "Default angle estimation which assumes track from PV (0,0,0) does not work." << endl;
-      //cout << "Use an error parameterization which only depends on cluster size (by Vincenzo Chiochia)." << endl; 
+      cout << "Use an error parameterization which only depends on cluster size (by Vincenzo Chiochia)." << endl; 
       
       if ( thePart == GeomDetEnumerators::PixelBarrel ) 
 	{
@@ -652,10 +781,16 @@ PixelCPEGeneric::localError( const SiPixelCluster& cluster,
     } // if ( !with_track_angle )
   else
     {
-      //cout << "Track angles are known. We can use either errors from templates or the error parameterization from DB." << endl;
+      cout << "Track angles are known. We can use either errors from templates or the error parameterization from DB." << endl;
       
       if ( UseErrorsFromTemplates_ )
+
 	{
+
+	  //Carlotta
+	  cout << "using errors from templates...with track angle" << endl;
+
+
 	  if (qBin_ == 0 && inflate_errors )
 	    {	       
 	      int n_bigx = 0;
@@ -718,9 +853,12 @@ PixelCPEGeneric::localError( const SiPixelCluster& cluster,
 	    } // if ( qbin == 0 && inflate_errors ) else
 
 	} //if ( UseErrorsFromTemplates_ )
+
       else 
 	{
-	  //cout << endl << "Use errors from DB:" << endl;
+
+	  //Carlotta:
+	  cout << endl << "Use errors from DB:...with track angle" << endl;
 	  
 	  if ( edgex && edgey ) 
 	    { 	 
