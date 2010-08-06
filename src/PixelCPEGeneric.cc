@@ -585,109 +585,75 @@ PixelCPEGeneric::localError( const SiPixelCluster& cluster,
      DetId id = (det.geographicalId());
      int layer = PXBDetId::PXBDetId(id).layer();
      // cout << "layer " << layer << endl;
-
-     if ( thePart == GeomDetEnumerators::PixelBarrel ) {
-
-       // cout << "we are in BARREL" << endl;
-
-       if( SmallPitch_ && layer == 1 )
-         {
-
-           // cout << " small pitch " << SmallPitch_ << " layer " << layer << endl;
-
-           if ( !edgex )
-             {
-               // in case of low threshold (2000 electrons):
-               if      ( sizex == 1 ) xerr = 0.00088; // Size = 1 -> Sigma = 12.1 um
-               else if ( sizex == 2 ) xerr = 0.00065; // Size = 2 -> Sigma = 7.2 um
-               else if ( sizex == 3 ) xerr = 0.00116; // Size = 3 -> Sigma = 10.5 um
-               else                   xerr = 0.01057;
-
-               /*
-               //in case of high threshold (3700 electrons):
-               if      ( sizex == 1 ) xerr = 0.00121; // Size = 1 -> Sigma = 12.1 um
-               else if ( sizex == 2 ) xerr = 0.00072; // Size = 2 -> Sigma = 7.2 um
-               else if ( sizex == 3 ) xerr = 0.00105; // Size = 3 -> Sigma = 10.5 um
-               else                   xerr = 0.01057;
-               */
-             }
-           if ( !edgey )
-             {
-
-               // in case of low threshold (2000 electrons):
-               if      ( sizey ==  1 ) yerr = 0.00202; // 21.8 um
-               else if ( sizey ==  2 ) yerr = 0.00103; // 14.5 um
-               else if ( sizey ==  3 ) yerr = 0.00141; // 19 um
-               else if ( sizey ==  4 ) yerr = 0.00157; // 20 um
-               else if ( sizey ==  5 ) yerr = 0.00157; // 20 um
-               else if ( sizey ==  6 ) yerr = 0.00158; // 21 um
-               else if ( sizey ==  7 ) yerr = 0.00163; // 20 um
-               else if ( sizey ==  8 ) yerr = 0.00159; // 20 um
-               else if ( sizey ==  9 ) yerr = 0.00155; // 21 um
-               else                    yerr = 0.00164; // 21 um
-
-               /*
-               //in case of high threshold(3700 electrons):
-               if      ( sizey ==  1 ) yerr = 0.00218; // 21.8 um
-               else if ( sizey ==  2 ) yerr = 0.00145; // 14.5 um
-               else if ( sizey ==  3 ) yerr = 0.00189; // 19 um
-               else if ( sizey ==  4 ) yerr = 0.00201; // 20 um
-               else if ( sizey ==  5 ) yerr = 0.00198; // 20 um
-               else if ( sizey ==  6 ) yerr = 0.00211; // 21 um
-               else if ( sizey ==  7 ) yerr = 0.00198; // 20 um
-               else if ( sizey ==  8 ) yerr = 0.00203; // 20 um
-               else if ( sizey ==  9 ) yerr = 0.00210; // 21 um
-               else                    yerr = 0.00207; // 21 um
-               */
-             }
-         }
-       // if layer != 1....we still have standard pitch + standard thickness
-       else
-         {
-
-           // cout << " ELSE  " << SmallPitch_ << " layer " << layer << endl;
-
-           if ( !edgex )
-             {
-               if      ( sizex == 1 ) xerr = 0.00129; // Size = 1 -> Sigma = 12.9 um
-               else if ( sizex == 2 ) xerr = 0.00085; // Size = 2 -> Sigma = 8.5 um
-               else if ( sizex == 3 ) xerr = 0.00133; // Size = 3 -> Sigma = 13.3 um
-               else                   xerr = 0.01658;
-             }
-           if ( !edgey )
-             {
-               if      ( sizey ==  1 ) yerr = 0.00327; // 32.7 um
-               else if ( sizey ==  2 ) yerr = 0.00173; // 17.3 um
-               else if ( sizey ==  3 ) yerr = 0.00222; // 22 um
-               else if ( sizey ==  4 ) yerr = 0.00242; // 24 um
-               else if ( sizey ==  5 ) yerr = 0.00241; // 24 um
-               else if ( sizey ==  6 ) yerr = 0.00234; // 23 um
-               else if ( sizey ==  7 ) yerr = 0.00232; // 23 um
-               else if ( sizey ==  8 ) yerr = 0.00242; // 24 um
-               else if ( sizey ==  9 ) yerr = 0.00226; // 22 um
-               else                    yerr = 0.00235; // 23 um
-             }
-         }
-     }
-     // if forward
-     else
-       {
-         if ( !edgex )
-           {
-             if      ( sizex == 1 ) xerr = 0.0020;
-             else if ( sizex == 2 ) xerr = 0.0020;
-             else                   xerr = 0.0020;
-           }
-         if ( !edgey )
-           {
-             if  ( sizey == 1 ) yerr = 0.00210; // 21 um
-             else               yerr = 0.00075; // 7.5 um
-           }
-         // cout << "we are in ENDCAPPP " << xerr << " " << yerr << endl;
-       } //end if endcap
-
-
-     //cout << "Small " << SmallPitch_ << " " << thePart << " layer " << layer << " errors finally " << sizex << " " << xerr << " " << sizey << " " << yerr << endl;
+     // ------------------------------------------------
+        if ( thePart == GeomDetEnumerators::PixelBarrel ) {
+          if( SmallPitch_ && layer == 1 )
+            {   // PXB Small Pitch
+              if  ( !edgex )
+                  {
+                    if      ( sizex == 1 ) xerr = 0.000917;     // Old 0.0015
+                    else if ( sizex == 2 ) xerr = 0.000738;     // Old 0.00089
+                    else if ( sizex == 3 ) xerr = 0.000946;     // Old 0.0014
+                    else                   xerr = 0.00429;      // Old 0.0046
+                  } // End of PXB Small Pitch X
+              if ( !edgey )
+                  {
+                    if      ( sizey == 1 ) yerr = 0.00197;      // Old 0.0022
+                    else if ( sizey == 2 ) yerr = 0.00131;      // Old 0.0015
+                    else if ( sizey == 3 ) yerr = 0.00143;      // Old 0.0017
+                    else if ( sizey == 4 ) yerr = 0.00154;      // Old 0.0018
+                    else if ( sizey == 5 ) yerr = 0.00155;      // Old 0.0019
+                    else if ( sizey == 6 ) yerr = 0.0016;       // Old 0.0020
+                    else if ( sizey == 7 ) yerr = 0.00162;      // Old 0.0021
+                    else if ( sizey == 8 ) yerr = 0.00166;      // Old 0.0021
+                    else if ( sizey == 9 ) yerr = 0.00172;      // Old 0.0021
+                    else                   yerr = 0.00169;      // Old 0.0029
+                  } // End of PXB Small Pitch Y
+            } // End of PXB Small Pitch
+          else
+            {   // PXB Reg Pitch
+              if  ( !edgex )
+                  {
+                    if      ( sizex == 1 ) xerr = 0.00114;      // Old 0.0016
+                    else if ( sizex == 2 ) xerr = 0.00102;      // Old 0.0012
+                    else if ( sizex == 3 ) xerr = 0.00196;      // Old 0.0024
+                    else                   xerr = 0.00436;      // Old 0.0048
+                  } // End of PXB Reg Pitch X
+              if ( !edgey )
+                  {
+                    if      ( sizey == 1 ) yerr = 0.00293;      // Old 0.0034
+                    else if ( sizey == 2 ) yerr = 0.00205;      // Old 0.0021
+                    else if ( sizey == 3 ) yerr = 0.00226;      // Old 0.0025
+                    else if ( sizey == 4 ) yerr = 0.00242;      // Old 0.0027
+                    else if ( sizey == 5 ) yerr = 0.00239;      // Old 0.0029
+                    else if ( sizey == 6 ) yerr = 0.00246;      // Old 0.0031
+                    else if ( sizey == 7 ) yerr = 0.00234;      // Old 0.0033
+                    else if ( sizey == 8 ) yerr = 0.00241;      // Old 0.0033
+                    else if ( sizey == 9 ) yerr = 0.00236;      // Old 0.0041
+                    else                   yerr = 0.00357;      // Old 0.0055
+                  } // End of PXB Reg Pitch Y
+            } // End of PXB Reg Pitch
+        } // End of PXB
+        else
+          { // FPix
+            if ( !edgex )
+               {
+                    if      ( sizex == 1 ) xerr = 0.00166;      // Old 0.0014
+                    else if ( sizex == 2 ) xerr = 0.000939;     // Old 0.00094
+                    else if ( sizex == 3 ) xerr = 0.00157;      // Old 0.0023
+                    else                   xerr = 0.0017;       // Old 0.0032 for >=4
+               } // End of FPix X
+            if ( !edgey )
+               {
+                    if      ( sizey == 1 ) yerr = 0.00267;      // Old 0.0029
+                    else if ( sizey == 2 ) yerr = 0.00117;      // Old 0.0013
+                    else if ( sizey == 3 ) yerr = 0.00227;      // Old 0.0032
+                    else                   yerr = 0.00222;      // Old 0.0040 for >=4
+               } // End of FPix Y
+          } // End FPix
+     // ------------------------------------------------
+     //cout << "Small " << SmallPitch_ << " " << thePart << " layer " << layer 
+     //     << " errors finally " << sizex << " " << xerr << " " << sizey << " " << yerr << endl;
    } // end if Upgrade_
 
 
