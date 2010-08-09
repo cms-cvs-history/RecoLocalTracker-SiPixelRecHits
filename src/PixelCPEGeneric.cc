@@ -586,70 +586,70 @@ PixelCPEGeneric::localError( const SiPixelCluster& cluster,
      int layer = PXBDetId::PXBDetId(id).layer();
      // cout << "layer " << layer << endl;
      // ------------------------------------------------
-        if ( thePart == GeomDetEnumerators::PixelBarrel ) {
-          if( SmallPitch_ && layer == 1 )
-            {   // PXB Small Pitch
-              if  ( !edgex )
-                  {
-                    if      ( sizex == 1 ) xerr = 0.000917;     // Old 0.0015
-                    else if ( sizex == 2 ) xerr = 0.000738;     // Old 0.00089
-                    else if ( sizex == 3 ) xerr = 0.000946;     // Old 0.0014
-                    else                   xerr = 0.00429;      // Old 0.0046
-                  } // End of PXB Small Pitch X
-              if ( !edgey )
-                  {
-                    if      ( sizey == 1 ) yerr = 0.00197;      // Old 0.0022
-                    else if ( sizey == 2 ) yerr = 0.00131;      // Old 0.0015
-                    else if ( sizey == 3 ) yerr = 0.00143;      // Old 0.0017
-                    else if ( sizey == 4 ) yerr = 0.00154;      // Old 0.0018
-                    else if ( sizey == 5 ) yerr = 0.00155;      // Old 0.0019
-                    else if ( sizey == 6 ) yerr = 0.0016;       // Old 0.0020
-                    else if ( sizey == 7 ) yerr = 0.00162;      // Old 0.0021
-                    else if ( sizey == 8 ) yerr = 0.00166;      // Old 0.0021
-                    else if ( sizey == 9 ) yerr = 0.00172;      // Old 0.0021
-                    else                   yerr = 0.00169;      // Old 0.0029
-                  } // End of PXB Small Pitch Y
-            } // End of PXB Small Pitch
-          else
-            {   // PXB Reg Pitch
-              if  ( !edgex )
-                  {
-                    if      ( sizex == 1 ) xerr = 0.00114;      // Old 0.0016
-                    else if ( sizex == 2 ) xerr = 0.00102;      // Old 0.0012
-                    else if ( sizex == 3 ) xerr = 0.00196;      // Old 0.0024
-                    else                   xerr = 0.00436;      // Old 0.0048
-                  } // End of PXB Reg Pitch X
-              if ( !edgey )
-                  {
-                    if      ( sizey == 1 ) yerr = 0.00293;      // Old 0.0034
-                    else if ( sizey == 2 ) yerr = 0.00205;      // Old 0.0021
-                    else if ( sizey == 3 ) yerr = 0.00226;      // Old 0.0025
-                    else if ( sizey == 4 ) yerr = 0.00242;      // Old 0.0027
-                    else if ( sizey == 5 ) yerr = 0.00239;      // Old 0.0029
-                    else if ( sizey == 6 ) yerr = 0.00246;      // Old 0.0031
-                    else if ( sizey == 7 ) yerr = 0.00234;      // Old 0.0033
-                    else if ( sizey == 8 ) yerr = 0.00241;      // Old 0.0033
-                    else if ( sizey == 9 ) yerr = 0.00236;      // Old 0.0041
-                    else                   yerr = 0.00357;      // Old 0.0055
-                  } // End of PXB Reg Pitch Y
-            } // End of PXB Reg Pitch
-        } // End of PXB
-        else
-          { // FPix
-            if ( !edgex )
-               {
-                    if      ( sizex == 1 ) xerr = 0.00166;      // Old 0.0014
-                    else if ( sizex == 2 ) xerr = 0.000939;     // Old 0.00094
-                    else if ( sizex == 3 ) xerr = 0.00157;      // Old 0.0023
-                    else                   xerr = 0.0017;       // Old 0.0032 for >=4
-               } // End of FPix X
-            if ( !edgey )
-               {
-                    if      ( sizey == 1 ) yerr = 0.00267;      // Old 0.0029
-                    else if ( sizey == 2 ) yerr = 0.00117;      // Old 0.0013
-                    else if ( sizey == 3 ) yerr = 0.00227;      // Old 0.0032
-                    else                   yerr = 0.00222;      // Old 0.0040 for >=4
-               } // End of FPix Y
+       if ( thePart == GeomDetEnumerators::PixelBarrel ) {
+         if( SmallPitch_ && layer == 1 )
+           {   // PXB Small Pitch
+             if  ( !edgex )
+                 {
+                   if      ( sizex == 1 ) xerr = 0.00104;      // Old 0.0015
+                   else if ( sizex == 2 ) xerr = 0.000691;     // Old 0.00089
+                   else if ( sizex == 3 ) xerr = 0.00122;      // Old 0.0014
+                   else                   xerr = 0.00321;      // Old 0.0046
+                 } // End of PXB Small Pitch X
+             if ( !edgey )
+                 {
+                   if      ( sizey == 1 ) yerr = 0.00199;      // Old 0.0022
+                   else if ( sizey == 2 ) yerr = 0.00136;      // Old 0.0015
+                   else if ( sizey == 3 ) yerr = 0.0015;       // Old 0.0017
+                   else if ( sizey == 4 ) yerr = 0.00153;      // Old 0.0018
+                   else if ( sizey == 5 ) yerr = 0.00152;      // Old 0.0019
+                   else if ( sizey == 6 ) yerr = 0.00171;      // Old 0.0020
+                   else if ( sizey == 7 ) yerr = 0.00154;      // Old 0.0021
+                   else if ( sizey == 8 ) yerr = 0.00157;      // Old 0.0021
+                   else if ( sizey == 9 ) yerr = 0.00154;      // Old 0.0021
+                   else                   yerr = 0.00164;      // Old 0.0029
+                 } // End of PXB Small Pitch Y
+           } // End of PXB Small Pitch
+         else
+           {   // PXB Reg Pitch
+             if  ( !edgex )
+                 {
+                   if      ( sizex == 1 ) xerr = 0.00114;      // Old 0.0016
+                   else if ( sizex == 2 ) xerr = 0.00104;      // Old 0.0012
+                   else if ( sizex == 3 ) xerr = 0.00214;      // Old 0.0024
+                   else                   xerr = 0.00425;      // Old 0.0048
+                 } // End of PXB Reg Pitch X
+             if ( !edgey )
+                 {
+                   if      ( sizey == 1 ) yerr = 0.00299;      // Old 0.0034
+                   else if ( sizey == 2 ) yerr = 0.00203;      // Old 0.0021
+                   else if ( sizey == 3 ) yerr = 0.0023;       // Old 0.0025
+                   else if ( sizey == 4 ) yerr = 0.00237;      // Old 0.0027
+                   else if ( sizey == 5 ) yerr = 0.00233;      // Old 0.0029
+                   else if ( sizey == 6 ) yerr = 0.00243;      // Old 0.0031
+                   else if ( sizey == 7 ) yerr = 0.00232;      // Old 0.0033
+                   else if ( sizey == 8 ) yerr = 0.00259;      // Old 0.0033
+                   else if ( sizey == 9 ) yerr = 0.00176;      // Old 0.0041
+                   else                   yerr = 0.00245;      // Old 0.0055
+                 } // End of PXB Reg Pitch Y
+           } // End of PXB Reg Pitch
+       } // End of PXB
+       else
+         { // FPix
+           if ( !edgex )
+              {
+                   if      ( sizex == 1 ) xerr = 0.00151;      // Old 0.0014
+                   else if ( sizex == 2 ) xerr = 0.000813;     // Old 0.00094
+                   else if ( sizex == 3 ) xerr = 0.00221;      // Old 0.0023
+                   else                   xerr = 0.00218;      // Old 0.0032 for >=4
+              } // End of FPix X
+           if ( !edgey )
+              {
+                   if      ( sizey == 1 ) yerr = 0.00261;      // Old 0.0029
+                   else if ( sizey == 2 ) yerr = 0.00107;      // Old 0.0013
+                   else if ( sizey == 3 ) yerr = 0.00264;      // Old 0.0032
+                   else                   yerr = 0.00357;      // Old 0.0040 for >=4
+              } // End of FPix Y
           } // End FPix
      // ------------------------------------------------
      //cout << "Small " << SmallPitch_ << " " << thePart << " layer " << layer 
