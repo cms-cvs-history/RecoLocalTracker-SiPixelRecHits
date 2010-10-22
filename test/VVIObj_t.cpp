@@ -1,4 +1,5 @@
 #include "RecoLocalTracker/SiPixelRecHits/src/VVIObj.cc"
+#include "TMath.h"
 #include<iostream>
 
 double afun(double x) { return x;}
