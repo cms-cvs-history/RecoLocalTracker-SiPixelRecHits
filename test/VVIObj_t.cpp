@@ -21,6 +21,17 @@ int main() {
     res = dzero(5,15,x0,rv,1.e-5,1000,afun);
     std::cout << res << " " << x0 << " " << rv << " " << std::endl;
 
+    double kappa[] = { 0.0681354, 0.0725822, 2.27383  };
+    double xvav[]  = { 0.434149,  7.45804, 2.27383  };
+
+    double beta2=1;
+    for (int i=0; i!=3; ++i) {
+      VVIObj vvidist(kappa[i], beta2, 1);
+      double prvav = vvidist.fcn(xvav[i]);
+      std::cout << "vav: " << kappa << " " << xvav << " " << prvav
+               << " " << TMath::VavilovI(xvav[i], kappa[i], beta2) << std::endl;
+    }
+
    return 0;
 
 }
