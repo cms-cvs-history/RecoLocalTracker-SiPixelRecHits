@@ -1,7 +1,7 @@
 #include "RecoLocalTracker/SiPixelRecHits/src/VVIObj.cc"
 #include<iostream>
 
-double afun(double x) { return x*x;}
+double afun(double x) { return x;}
 
 int main() {
   using namespace VVIObjDetails;
