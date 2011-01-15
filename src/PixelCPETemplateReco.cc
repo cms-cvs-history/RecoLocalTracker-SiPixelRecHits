@@ -3,7 +3,7 @@
 
 // Geometry services
 #include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetUnit.h"
-#include "Geometry/TrackerTopology/interface/RectangularPixelTopology.h"
+#include "Geometry/TrackerGeometryBuilder/interface/RectangularPixelTopology.h"
 
 //#define DEBUG
 
@@ -204,13 +204,13 @@ PixelCPETemplateReco::localPosition(const SiPixelCluster& cluster, const GeomDet
   // x directions (shorter), rows
   for (int irow = 0; irow < cluster_matrix_size_x; ++irow)
     {
-      xdouble[irow] = RectangularPixelTopology::isItBigPixelInX( irow+row_offset );
+      xdouble[irow] = theTopol->isItBigPixelInX( irow+row_offset );
     }
       
   // y directions (longer), columns
   for (int icol = 0; icol < cluster_matrix_size_y; ++icol) 
     {
-      ydouble[icol] = RectangularPixelTopology::isItBigPixelInY( icol+col_offset );
+      ydouble[icol] = theTopol->isItBigPixelInY( icol+col_offset );
     }
 
   // Output:

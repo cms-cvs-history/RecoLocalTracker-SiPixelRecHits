@@ -24,7 +24,7 @@
 #include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetUnit.h"
 #include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetType.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
-#include "Geometry/TrackerTopology/interface/RectangularPixelTopology.h"
+#include "Geometry/TrackerGeometryBuilder/interface/RectangularPixelTopology.h"
 
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
@@ -508,11 +508,8 @@ void ReadPixelRecHit::analyze(const edm::Event& e,
 	float adc = ((pixelsVec[i].adc)/1000); // in kelec.
 	int chan = PixelChannelIdentifier::pixelToChannel(int(pixx),int(pixy));
 
-	//if(RectangularPixelTopology::isItBigPixelInX(int(pixx))) bigInX=true;
-	//if(RectangularPixelTopology::isItBigPixelInY(int(pixy))) bigInY=true; 
-	
-	bool bigInX = (RectangularPixelTopology::isItBigPixelInX(int(pixx)));
-	bool bigInY = (RectangularPixelTopology::isItBigPixelInY(int(pixy)));
+	bool bigInX  = topol->isItBigPixelInX(int(pixx));
+	bool bigInY  = topol->isItBigPixelInY(int(pixy));
 	
 	bool edgeInX = topol->isItEdgePixelInX(int(pixx));
 	bool edgeInY = topol->isItEdgePixelInY(int(pixy));

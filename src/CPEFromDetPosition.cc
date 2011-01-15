@@ -4,7 +4,7 @@
 
 #include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetUnit.h"
 //#include "Geometry/CommonTopologies/interface/PixelTopology.h"
-#include "Geometry/TrackerTopology/interface/RectangularPixelTopology.h"
+#include "Geometry/TrackerGeometryBuilder/interface/RectangularPixelTopology.h"
 
 //#include "CommonDet/BasicDet/interface/Topology.h"
 //#include "CommonDet/BasicDet/interface/Det.h"
@@ -210,19 +210,19 @@ CPEFromDetPosition::measurementPosition( const SiPixelCluster& cluster,
     float yPos = ypos(cluster);
     float lxshift = theLShiftX; // nominal lorentz shift
     float lyshift = theLShiftY;
-    if(RectangularPixelTopology::isItBigPixelInX(int(xPos))) // if big
+    if(theTopol->isItBigPixelInX(int(xPos))) // if big
       lxshift = theLShiftX/2.;  // reduce the shift
     if (thePart == GeomDetEnumerators::PixelBarrel) {
       lyshift =0.0;
     } else { //forward
-      if(RectangularPixelTopology::isItBigPixelInY(int(yPos))) // if big
+      if(theTopol->isItBigPixelInY(int(yPos))) // if big
 	lyshift = theLShiftY/2.;  // reduce the shift 
     }
     return MeasurementPoint( xpos(cluster)-lxshift,ypos(cluster)-lyshift);
   } else {
     float xPos = xpos(cluster); // x position in the measurement frame
     float lshift = theLShiftX; // nominal lorentz shift
-    if(RectangularPixelTopology::isItBigPixelInX(int(xPos))) // if big 
+    if(theTopol->isItBigPixelInX(int(xPos))) // if big 
       lshift = theLShiftX/2.;  // reduce the shift
     return MeasurementPoint( xpos(cluster)-lshift,ypos(cluster));
   } 
@@ -460,9 +460,9 @@ float CPEFromDetPosition::ypos(const SiPixelCluster& cluster) const {
 
   float pitch1 = thePitchY;
   float pitch2 = thePitchY;
-  if(RectangularPixelTopology::isItBigPixelInY(imin) ) 
+  if(theTopol->isItBigPixelInY(imin) ) 
     pitch1= 2.*thePitchY;
-  if(RectangularPixelTopology::isItBigPixelInY(imax) ) 
+  if(theTopol->isItBigPixelInY(imax) ) 
     pitch2= 2.*thePitchY;
   
   // position msII

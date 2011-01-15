@@ -3,7 +3,7 @@
 //#include "Utilities/Configuration/interface/Architecture.h"
 
 #include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetUnit.h"
-#include "Geometry/TrackerTopology/interface/RectangularPixelTopology.h"
+#include "Geometry/TrackerGeometryBuilder/interface/RectangularPixelTopology.h"
 
 #include "RecoLocalTracker/SiPixelRecHits/interface/PixelCPEParmError.h"
 
@@ -201,9 +201,9 @@ PixelCPEParmError::ypos(const SiPixelCluster& cluster) const
   // Check the validty of the width
   if(effWidth>2*thePitchY) { //  width too large
     float edgeLength = 2*thePitchY; // take care of big pixels
-    if(RectangularPixelTopology::isItBigPixelInY(imin) )
+    if (theTopol->isItBigPixelInY(imin))
       edgeLength += thePitchY;
-    if(RectangularPixelTopology::isItBigPixelInY(imax) )
+    if (theTopol->isItBigPixelInY(imax))
       edgeLength += thePitchY;
 
     if(effWidth>edgeLength) effWidth=edgeLength/2.;
