@@ -369,8 +369,7 @@ void ReadPixelRecHit::analyze(const edm::Event& e,
      
     const BoundPlane& plane = theGeomDet->surface(); //for transf.     
     double detThick = theGeomDet->specificSurface().bounds().thickness();
-    const RectangularPixelTopology * topol =
-      dynamic_cast<const RectangularPixelTopology*>(&(theGeomDet->specificTopology()));
+    const PixelTopology * topol = &(theGeomDet->specificTopology());
  
     int cols = theGeomDet->specificTopology().ncolumns();
     int rows = theGeomDet->specificTopology().nrows();

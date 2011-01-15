@@ -169,7 +169,7 @@ class PixelCPEBase : public PixelClusterParameterEstimator {
   //---------------------------------------------------------------------------
   //--- Detector-level quantities
   mutable const PixelGeomDetUnit * theDet;
-  mutable const RectangularPixelTopology * theTopol;
+  mutable const PixelTopology * theTopol;
   mutable GeomDetType::SubDetector thePart;
   mutable EtaCorrection theEtaFunc;
   mutable float theThickness;
@@ -320,7 +320,7 @@ class PixelCPEBase : public PixelClusterParameterEstimator {
   struct Param 
   {
     Param() : topology(0), drift(0.0, 0.0, 0.0) {}
-    RectangularPixelTopology const * topology;
+    PixelTopology const * topology;
     LocalVector drift;
   };
   

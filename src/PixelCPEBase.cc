@@ -129,8 +129,7 @@ PixelCPEBase::setTheDet( const GeomDetUnit & det, const SiPixelCluster & cluster
   theThickness = theDet->surface().bounds().thickness();
 
   //--- Cache the topology.
-  theTopol
-    = dynamic_cast<const RectangularPixelTopology*>( & (theDet->specificTopology()) );
+  theTopol = & (theDet->specificTopology());
 
   //---- The geometrical description of one module/plaquette
   theNumOfRow = theTopol->nrows();      // rows in x
@@ -414,7 +413,7 @@ float PixelCPEBase::lorentzShiftX() const
     {
       //cout << "--------------- new ----------------------" << endl;
       //cout << "p.topology = " << p.topology << endl;
-      p.topology = (RectangularPixelTopology*)( & ( theDet->specificTopology() ) );    
+      p.topology = & ( theDet->specificTopology() );    
       p.drift = driftDirection(magfield_->inTesla(theDet->surface().position()) );
       dir = p.drift;
       //cout << "p.topology = " << p.topology << endl;
@@ -455,7 +454,7 @@ float PixelCPEBase::lorentzShiftY() const
     {
       //cout << "--------------- new y ----------------------" << endl;
       //cout << "p.topology y = " << p.topology << endl;
-      p.topology = (RectangularPixelTopology*)( & ( theDet->specificTopology() ) );    
+      p.topology = & ( theDet->specificTopology() );
       p.drift = driftDirection(magfield_->inTesla(theDet->surface().position()) );
       dir = p.drift;
       //cout << "p.topology y = " << p.topology << endl;

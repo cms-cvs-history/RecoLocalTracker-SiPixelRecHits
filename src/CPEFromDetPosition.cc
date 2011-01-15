@@ -100,8 +100,7 @@ void CPEFromDetPosition::setTheDet( const GeomDetUnit & det )const {
   theThickness = theDet->surface().bounds().thickness();
 
   //--- Cache the topology.
-  theTopol
-    = dynamic_cast<const RectangularPixelTopology*>( & (theDet->specificTopology()) );
+  theTopol = & (theDet->specificTopology());
 
   //---- The geometrical description of one module/plaquette
   theNumOfRow = theTopol->nrows();      // rows in x

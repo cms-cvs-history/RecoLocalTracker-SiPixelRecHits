@@ -56,7 +56,7 @@ class CPEFromDetPosition : public PixelClusterParameterEstimator
  protected:
   //members
   mutable const PixelGeomDetUnit* theDet;
-  mutable const RectangularPixelTopology * theTopol;
+  mutable const PixelTopology * theTopol;
   mutable GeomDetType::SubDetector thePart;
   mutable EtaCorrection theEtaFunc;
   mutable float theThickness;
