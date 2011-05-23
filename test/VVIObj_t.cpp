@@ -1,4 +1,4 @@
-#include "RecoLocalTracker/SiPixelRecHits/src/VVIObj.cc"
+#include "RecoLocalTracker/SiPixelRecHits/plugins/VVIObj.cc"
 #include "TMath.h"
 #include<iostream>
 
