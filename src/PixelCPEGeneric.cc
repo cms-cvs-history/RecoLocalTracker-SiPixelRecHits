@@ -609,7 +609,12 @@ PixelCPEGeneric::localError( const SiPixelCluster& cluster,
      // cout << "layer " << layer << endl;
      // ------------------------------------------------
        if ( thePart == GeomDetEnumerators::PixelBarrel ) {
-         if( SmallPitch_ && layer == 1 )
+         if( layer > 4 )
+           {
+             xerr = thePitchX / sqrt( 12. ) ;
+             yerr = thePitchY / sqrt( 12. ) ;
+           }
+         else if( SmallPitch_ && layer == 1 )
            {   // PXB Small Pitch
              if  ( !edgex )
                  {
