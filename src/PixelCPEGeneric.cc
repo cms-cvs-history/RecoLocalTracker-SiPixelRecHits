@@ -132,12 +132,13 @@ PixelCPEGeneric::localPosition(const SiPixelCluster& cluster,
   if ( UseErrorsFromTemplates_ )
     {
       templID_ = templateDBobject_->getTemplateID(theDet->geographicalId().rawId());
-      bool fpix;  //!< barrel(false) or forward(true)
+      // Strictly speaing the following change matters nothing for the upgrade, but I want to mirror the HEAD -Eric
+      /*bool fpix;  //!< barrel(false) or forward(true)
       if ( thePart == GeomDetEnumerators::PixelBarrel )
 	fpix = false;    // no, it's not forward -- it's barrel
       else
 	fpix = true;     // yes, it's forward
-      
+      */
       float qclus = cluster.charge();
       
       GlobalVector bfield = magfield_->inTesla( theDet->surface().position() ); 
