@@ -606,7 +606,7 @@ PixelCPEGeneric::localError( const SiPixelCluster& cluster,
      //cout << " I'm in Upgrade!! " << endl;
 
      DetId id = (det.geographicalId());
-     int layer = PXBDetId::PXBDetId(id).layer();
+     int layer = PXBDetId(id).layer();
      // cout << "layer " << layer << endl;
      // ------------------------------------------------
        if ( thePart == GeomDetEnumerators::PixelBarrel ) {
