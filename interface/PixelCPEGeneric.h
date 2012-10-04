@@ -128,9 +128,16 @@ class PixelCPEGeneric : public PixelCPEBase
   bool LoadTemplatesFromDB_;
   bool TruncatePixelCharge_;
   bool IrradiationBiasCorrection_;
+  bool useSizeNums_;
 
   double EdgeClusterErrorX_;
   double EdgeClusterErrorY_;
+
+  std::vector<float> xerr_barrel_l1_,yerr_barrel_l1_,xerr_barrel_ln_;
+  std::vector<float> yerr_barrel_ln_,xerr_endcap_,yerr_endcap_;
+  float xerr_barrel_l1_def_, yerr_barrel_l1_def_,xerr_barrel_ln_def_;
+  float yerr_barrel_ln_def_, xerr_endcap_def_, yerr_endcap_def_;
+
 
   //--- DB Error Parametrization object
   SiPixelCPEGenericDBErrorParametrization * genErrorsFromDB_;

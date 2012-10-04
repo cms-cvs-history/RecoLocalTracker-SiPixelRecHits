@@ -5,6 +5,9 @@
 
 // this is needed to get errors from templates
 #include "RecoLocalTracker/SiPixelRecHits/interface/SiPixelTemplate.h"
+#include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
+#include "DataFormats/DetId/interface/DetId.h"
+
 
 // Services
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
@@ -92,6 +95,48 @@ PixelCPEGeneric::PixelCPEGeneric(edm::ParameterSet const & conf,
   //cout << "(int)LoadTemplatesFromDB_    = " << (int)LoadTemplatesFromDB_       << endl;
   //cout << endl;
 
+  //yes, these should be config parameters!
+  //default case...
+  xerr_barrel_l1_= {0.00115, 0.00120, 0.00088};
+  xerr_barrel_l1_def_=0.01030;
+  yerr_barrel_l1_= {0.00375,0.00230,0.00250,0.00250,0.00230,0.00230,0.00210,0.00210,0.00240};
+  yerr_barrel_l1_def_=0.00210;
+  xerr_barrel_ln_= {0.00115, 0.00120, 0.00088};
+  xerr_barrel_ln_def_=0.01030;
+  yerr_barrel_ln_= {0.00375,0.00230,0.00250,0.00250,0.00230,0.00230,0.00210,0.00210,0.00240};
+  yerr_barrel_ln_def_=0.00210;
+  xerr_endcap_= {0.0020, 0.0020};
+  xerr_endcap_def_=0.0020;
+  yerr_endcap_= {0.00210};
+  yerr_endcap_def_=0.00075;
+
+  bool isUpgrade=false;
+  if ( conf.exists("Upgrade") && conf.getParameter<bool>("Upgrade")) {
+    isUpgrade=true;
+    xerr_barrel_ln_= {0.00114,0.00104,0.00214};
+    xerr_barrel_ln_def_=0.00425;
+    yerr_barrel_ln_= {0.00299,0.00203,0.0023,0.00237,0.00233,0.00243,0.00232,0.00259,0.00176};
+    yerr_barrel_ln_def_=0.00245;
+    xerr_endcap_= {0.00151,0.000813,0.00221};
+    xerr_endcap_def_=0.00218;
+    yerr_endcap_= {0.00261,0.00107,0.00264};
+    yerr_endcap_def_=0.00357;
+    
+    if ( conf.exists("SmallPitch") && conf.getParameter<bool>("SmallPitch")) {
+      xerr_barrel_l1_= {0.00104, 0.000691, 0.00122};
+      xerr_barrel_l1_def_=0.00321;
+      yerr_barrel_l1_= {0.00199,0.00136,0.0015,0.00153,0.00152,0.00171,0.00154,0.00157,0.00154};
+      yerr_barrel_l1_def_=0.00164;
+    }
+    else{
+      xerr_barrel_l1_= {0.00114,0.00104,0.00214};
+      xerr_barrel_l1_def_=0.00425;
+      yerr_barrel_l1_= {0.00299,0.00203,0.0023,0.00237,0.00233,0.00243,0.00232,0.00259,0.00176};
+      yerr_barrel_l1_def_=0.00245;
+    }
+  }
+
+  useSizeNums_=isUpgrade ||(!with_track_angle && DoCosmics_);
 }
 
 
@@ -557,8 +602,8 @@ PixelCPEGeneric::localError( const SiPixelCluster& cluster,
   float xerr_sq = -99999.9;
   float yerr_sq = -99999.9;
 
-  int sizex = cluster.sizeX();
-  int sizey = cluster.sizeY();
+  unsigned int sizex = cluster.sizeX();
+  unsigned int sizey = cluster.sizeY();
    
   // Default errors are the maximum error used for edge clusters.
   /*
@@ -592,50 +637,56 @@ PixelCPEGeneric::localError( const SiPixelCluster& cluster,
   // Find if cluster contains double (big) pixels. 
   bool bigInX = theTopol->containsBigPixelInX( minPixelRow, maxPixelRow ); 	 
   bool bigInY = theTopol->containsBigPixelInY( minPixelCol, maxPixelCol );
-
-  if ( !with_track_angle && DoCosmics_ )
+  if ( useSizeNums_ )
     {
+
       //cout << "Track angles are not known and we are processing cosmics." << endl; 
       //cout << "Default angle estimation which assumes track from PV (0,0,0) does not work." << endl;
       //cout << "Use an error parameterization which only depends on cluster size (by Vincenzo Chiochia)." << endl; 
       
       if ( thePart == GeomDetEnumerators::PixelBarrel ) 
 	{
-	  if ( !edgex )
-	    {
-	      if      ( sizex == 1 ) xerr = 0.00115; // Size = 1 -> Sigma = 11.5 um 
-	      else if ( sizex == 2 ) xerr = 0.00120; // Size = 2 -> Sigma = 12.0 um      
-	      else if ( sizex == 3 ) xerr = 0.00088; // Size = 3 -> Sigma =  8.8 um
-	      else                   xerr = 0.01030;
-	    }
-	  
-	  if ( !edgey )
-	    {
-	      if      ( sizey ==  1 ) yerr = 0.00375; // 37.5 um 
-	      else if ( sizey ==  2 ) yerr = 0.00230; // 23 um      
-	      else if ( sizey ==  3 ) yerr = 0.00250; // 25 um
-	      else if ( sizey ==  4 ) yerr = 0.00250; // 25 um
-	      else if ( sizey ==  5 ) yerr = 0.00230; // 23 um
-	      else if ( sizey ==  6 ) yerr = 0.00230; // 23 um
-	      else if ( sizey ==  7 ) yerr = 0.00210; // 21 um
-	      else if ( sizey ==  8 ) yerr = 0.00210; // 21 um
-	      else if ( sizey ==  9 ) yerr = 0.00240; // 24 um
-	      else                    yerr = 0.00210; // 21um
-	    }
+	  DetId id = (det.geographicalId());
+	  int layer=PXBDetId(id).layer();
+	  if ( layer==1 ) {
+	    if ( !edgex )
+	      {
+		if ( sizex<=xerr_barrel_l1_.size() ) xerr=xerr_barrel_l1_[sizex-1];
+		else xerr=xerr_barrel_l1_def_;
+	      }
+	    
+	    if ( !edgey )
+	      {
+		if ( sizey<=yerr_barrel_l1_.size() ) yerr=yerr_barrel_l1_[sizey-1];
+		else yerr=yerr_barrel_l1_def_;
+	      }
+	  }
+	  else{
+	    if ( !edgex )
+	      {
+		if ( sizex<=xerr_barrel_ln_.size() ) xerr=xerr_barrel_ln_[sizex-1];
+		else xerr=xerr_barrel_ln_def_;
+	      }
+	    
+	    if ( !edgey )
+	      {
+		if ( sizey<=yerr_barrel_ln_.size() ) yerr=yerr_barrel_ln_[sizey-1];
+		else yerr=yerr_barrel_ln_def_;
+	      }
+	  }
 	} 
       else // EndCap
 	{
 	  if ( !edgex )
 	    {
-	      if      ( sizex == 1 ) xerr = 0.0020;
-	      else if ( sizex == 2 ) xerr = 0.0020;
-	      else                   xerr = 0.0020;
+	      if ( sizex<=xerr_endcap_.size() ) xerr=xerr_endcap_[sizex-1];
+	      else xerr=xerr_endcap_def_;
 	    }
 	
 	  if ( !edgey )
 	    {
-	      if  ( sizey == 1 ) yerr = 0.00210; // 21 um
-	      else               yerr = 0.00075; // 7.5 um
+	      if ( sizey<=yerr_endcap_.size() ) yerr=yerr_endcap_[sizex-1];
+	      else yerr=yerr_endcap_def_;
 	    }
 	}
 
