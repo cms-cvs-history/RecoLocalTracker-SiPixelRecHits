@@ -623,6 +623,10 @@ PixelCPEGeneric::localError( const SiPixelCluster& cluster,
 		else yerr=yerr_barrel_l1_def_;
 	      }
 	  }
+	  else if (layer>=5) { //Phase2 upgrade
+	    xerr=thePitchX / sqrt( 12. );
+	    yerr=thePitchY / sqrt( 12. );
+	  }
 	  else{
 	    if ( !edgex )
 	      {
