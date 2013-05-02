@@ -57,6 +57,7 @@ PixelCPETemplateReco::PixelCPETemplateReco(edm::ParameterSet const & conf,
   //-- Use Magnetic field at (0,0,0) to select a template ID [Morris, 6/25/08] (temporary until we implement DB access)
   
   DoCosmics_ = conf.getParameter<bool>("DoCosmics");
+  DoLorentz_ = conf.getParameter<bool>("DoLorentz");
   LoadTemplatesFromDB_ = conf.getParameter<bool>("LoadTemplatesFromDB");
   //cout << " PixelCPETemplateReco : (int)LoadTemplatesFromDB_ = " << (int)LoadTemplatesFromDB_ << endl;
   //cout << "field_magnitude = " << field_magnitude << endl;
@@ -134,6 +135,12 @@ LocalPoint
 PixelCPETemplateReco::localPosition(const SiPixelCluster& cluster, const GeomDetUnit & det) const 
 {
   setTheDet( det, cluster );
+   
+ // Compute the Lorentz shifts for this detector element for the Alignment Group [MS: for Gero]
+ if ( DoLorentz_ )
+    {
+  	computeLorentzShifts();
+    }
   
   bool fpix;  //  barrel(false) or forward(true)
   if ( thePart == GeomDetEnumerators::PixelBarrel )   
@@ -469,7 +476,20 @@ PixelCPETemplateReco::localPosition(const SiPixelCluster& cluster, const GeomDet
       // go back to the module coordinate system 
       templXrec_ += lp.x();
       templYrec_ += lp.y();
+       
+       
+// Compute the Alignment Group Corrections [template ID should already be selected from call to reco procedure]
+// The Generic Lorentz drift was calculated just after the setTheDet call [MS: for Gero].
+  if ( DoLorentz_ )
+    {
+
+       	float templateLorwidthCmX = micronsToCm*templ_.lorxwidth();
+       	float templateLorwidthCmY = micronsToCm*templ_.lorywidth();
+       	templXrec_ += 0.5*(lorentzShiftInCmX_ + templateLorwidthCmX);
+       	templYrec_ += 0.5*(lorentzShiftInCmY_ + templateLorwidthCmY);
+    	//cout << "templateLorwidthCmX  = " << templateLorwidthCmX  << "   ||   lorentzShiftInCmX = " << lorentzShiftInCmX_ << endl;
     }
+   }
     
   // Save probabilities and qBin in the quantities given to us by the base class
   // (for which there are also inline getters).  &&& templProbX_ etc. should be retired...
