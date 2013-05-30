@@ -623,7 +623,7 @@ PixelCPEGeneric::localError( const SiPixelCluster& cluster,
 		else yerr=yerr_barrel_l1_def_;
 	      }
 	  }
-	  else{
+	  else if (layer<=4) {
 	    if ( !edgex )
 	      {
 		if ( sizex<=xerr_barrel_ln_.size() ) xerr=xerr_barrel_ln_[sizex-1];
@@ -635,6 +635,10 @@ PixelCPEGeneric::localError( const SiPixelCluster& cluster,
 		if ( sizey<=yerr_barrel_ln_.size() ) yerr=yerr_barrel_ln_[sizey-1];
 		else yerr=yerr_barrel_ln_def_;
 	      }
+	  }
+	  else {
+		xerr=thePitchX / sqrt( 12.0f );
+		yerr=thePitchY / sqrt( 12.0f );
 	  }
 	} 
       else // EndCap
